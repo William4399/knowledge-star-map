@@ -93,17 +93,23 @@ export function buildPlan() {
   };
 }
 
+const READY_LIMIT = 6;
+const UPCOMING_LIMIT = 6;
+const expanded = { ready: false, upcoming: false };
+
 export function renderPath(root, handlers = {}) {
   const plan = buildPlan();
   const { role, ready, upcoming, progress } = plan;
   const pct = Math.round(progress.percent * 100);
+  const shownReady = expanded.ready ? ready : ready.slice(0, READY_LIMIT);
+  const shownUpcoming = expanded.upcoming ? upcoming : upcoming.slice(0, UPCOMING_LIMIT);
 
   const dirPills = Data.roles.map(r => `
     <button class="dir-pill ${r.id === role.id ? 'active' : ''}" data-action="direction" data-id="${r.id}">
       ${escapeHtml(r.name)}
     </button>`).join('');
 
-  const readyHtml = ready.length ? ready.slice(0, 8).map(item => {
+  const readyHtml = shownReady.length ? shownReady.map(item => {
     const g = galaxyOf(item.node);
     const qCount = questionsFor(item.node.id).length;
     const tags = [
@@ -132,12 +138,14 @@ export function renderPath(root, handlers = {}) {
           <button class="btn ghost sm" data-action="focus" data-id="${item.node.id}">定位</button>
         </div>
       </article>`;
-  }).join('') : `<div class="empty">
+  }).join('') : (pct === 100
+    ? `<div class="empty done"><p>✦ 这个方向的必修能力已经全部点亮。</p><p class="muted">可以切换到其他方向继续拓展，或去「我的」查看岗位与比赛匹配。</p></div>`
+    : `<div class="empty">
       <p>当前没有可以直接挑战的星星。</p>
       <p class="muted">先看看下方「接下来会解锁」，完成前置依赖后这里会出现新的目标。</p>
-    </div>`;
+    </div>`);
 
-  const upcomingHtml = upcoming.length ? upcoming.slice(0, 8).map(item => {
+  const upcomingHtml = shownUpcoming.length ? shownUpcoming.map(item => {
     const g = galaxyOf(item.node);
     const missingNames = item.missing.map(id => nodeById(id)?.name || id);
     const anyNames = item.anyMissing.map(id => nodeById(id)?.name || id);
@@ -152,7 +160,7 @@ export function renderPath(root, handlers = {}) {
           <span class="tag" style="color:${g.color};border-color:${g.color}55">${escapeHtml(g.name)}</span>
           <p>${need}</p>
         </div>
-        <span class="upcoming-badge">待解锁</span>
+        <button class="btn ghost sm" data-action="focus" data-id="${item.node.id}">查看</button>
       </article>`;
   }).join('') : '<div class="empty compact"><p>没有即将解锁的节点，先完成上方推荐。</p></div>';
 
@@ -198,7 +206,7 @@ export function renderPath(root, handlers = {}) {
           <div class="progress-track"><i style="width:${pct}%"></i></div>
           <span>${progress.doneAll} / ${progress.total}</span>
         </div>
-        <p class="muted small">${role.required.length} 个必修节点 + ${progress.groups.length} 组任一条件</p>
+        <p class="muted small">${role.required.length} 个必修节点${progress.groups.length ? ` + ${progress.groups.length} 组任一条件` : ''} · 通过挑战后自动计入</p>
       </div>
       <div class="hero-stat">
         <b style="color:${pct === 100 ? '#6ce7a8' : '#eaf2ff'}">${pct}%</b>
@@ -215,6 +223,7 @@ export function renderPath(root, handlers = {}) {
       </div>
       <p class="panel-sub">这些星的前置条件已经满足，按方向相关度与解锁潜力排序。</p>
       <div class="target-list">${readyHtml}</div>
+      ${ready.length > READY_LIMIT ? `<div class="list-more"><button class="btn ghost sm" data-action="expand" data-list="ready">${expanded.ready ? '收起列表' : `展开其余 ${ready.length - READY_LIMIT} 个`}</button></div>` : ''}
     </section>
 
     <section class="panel">
@@ -224,6 +233,7 @@ export function renderPath(root, handlers = {}) {
       </div>
       <p class="panel-sub">再点亮 1–2 颗相关星星，就能把这些节点纳入可挑战范围。</p>
       <div class="upcoming-list">${upcomingHtml}</div>
+      ${upcoming.length > UPCOMING_LIMIT ? `<div class="list-more"><button class="btn ghost sm" data-action="expand" data-list="upcoming">${expanded.upcoming ? '收起列表' : `展开其余 ${upcoming.length - UPCOMING_LIMIT} 个`}</button></div>` : ''}
     </section>
 
     <section class="panel">
@@ -240,7 +250,12 @@ export function renderPath(root, handlers = {}) {
     const action = actionEl.dataset.action;
     const id = actionEl.dataset.id;
     if (action === 'direction') {
+      expanded.ready = false;
+      expanded.upcoming = false;
       setDirection(id);
+    } else if (action === 'expand') {
+      expanded[actionEl.dataset.list] = !expanded[actionEl.dataset.list];
+      renderPath(root, handlers);
     } else if (action === 'challenge' && handlers.onChallenge) {
       handlers.onChallenge(id);
     } else if (action === 'focus' && handlers.onFocus) {
