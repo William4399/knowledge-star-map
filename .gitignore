@@ -17,6 +17,7 @@ venv/
 # 临时文件
 *.log
 *.tmp
+.trae-html-share-packages/
 
 # 本地凭据
 .token

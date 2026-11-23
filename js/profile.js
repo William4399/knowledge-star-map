@@ -78,8 +78,16 @@ function drawRadar(canvas, items) {
 
   const n = items.length;
   const cx = w / 2;
-  const cy = h / 2 + 2;
-  const R = Math.max(70, Math.min(w, h) / 2 - 44);
+  const cy = h / 2;
+  const labelFont = w < 420 ? 10 : 10.5;
+  ctx.font = `${labelFont}px -apple-system, "PingFang SC", sans-serif`;
+
+  // 预留标签宽度，避免文字被画布裁掉
+  let labelW = 0;
+  items.forEach(item => { labelW = Math.max(labelW, ctx.measureText(item.name).width); });
+  const marginX = labelW + 20;
+  const marginY = 22;
+  const R = Math.max(48, Math.min((w - marginX * 2) / 2, (h - marginY * 2) / 2));
   const angle = i => -Math.PI / 2 + (i * TAU) / n;
 
   // 网格
@@ -131,18 +139,30 @@ function drawRadar(canvas, items) {
     ctx.fill();
   });
 
-  // 标签
-  ctx.font = '10.5px -apple-system, "PingFang SC", sans-serif';
+  // 标签：按所在侧对齐，并夹取在画布内，保证 11 个星系名完整可读
   ctx.textBaseline = 'middle';
   items.forEach((item, i) => {
     const a = angle(i);
-    const x = cx + Math.cos(a) * (R + 18);
-    const y = cy + Math.sin(a) * (R + 16);
-    ctx.textAlign = Math.cos(a) > 0.35 ? 'left' : Math.cos(a) < -0.35 ? 'right' : 'center';
-    ctx.fillStyle = item.ratio > 0 ? 'rgba(214,232,255,0.92)' : 'rgba(120,136,158,0.7)';
+    const cos = Math.cos(a);
+    const sin = Math.sin(a);
+    let x = cx + cos * (R + 12);
+    let y = cy + sin * (R + 11);
+    const tw = ctx.measureText(item.name).width;
+
+    if (cos > 0.3) {
+      ctx.textAlign = 'left';
+      x = Math.min(x, w - tw - 4);
+    } else if (cos < -0.3) {
+      ctx.textAlign = 'right';
+      x = Math.max(x, tw + 4);
+    } else {
+      ctx.textAlign = 'center';
+      x = Math.max(tw / 2 + 4, Math.min(x, w - tw / 2 - 4));
+    }
+    y = Math.max(labelFont, Math.min(y, h - labelFont));
+
+    ctx.fillStyle = item.ratio > 0 ? 'rgba(214,232,255,0.9)' : 'rgba(124,140,162,0.68)';
     ctx.fillText(item.name, x, y);
-    ctx.fillStyle = 'rgba(108,231,168,0.8)';
-    ctx.fillText(`${Math.round(item.ratio * 100)}%`, x, y + 13);
   });
 }
 
@@ -183,7 +203,7 @@ export function renderProfile(root, handlers = {}) {
           <h3>${escapeHtml(m.role.name)}</h3>
           <p class="muted small">${escapeHtml(m.role.short)}</p>
         </div>
-        <span class="match-pct">${m.pct}%</span>
+        <span class="match-pct"><b>${m.pct}<em>%</em></b><small>匹配度</small></span>
       </header>
       <div class="progress-track"><i style="width:${m.pct}%"></i></div>
       <p class="muted small">方向能力 ${m.done} / ${m.total} 项已点亮</p>
@@ -242,7 +262,7 @@ export function renderProfile(root, handlers = {}) {
       <div class="galaxy-bars">
         ${items.map(item => `
           <div class="galaxy-bar">
-            <span class="gb-name" style="color:${item.color}">${escapeHtml(item.name)}</span>
+            <span class="gb-name"><i style="background:${item.color}"></i><span>${escapeHtml(item.name)}</span></span>
             <div class="progress-track"><i style="width:${Math.round(item.ratio * 100)}%;background:${item.color}"></i></div>
             <span class="gb-pct">${Math.round(item.ratio * 100)}%</span>
           </div>`).join('')}

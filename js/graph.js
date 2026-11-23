@@ -178,10 +178,13 @@ function drawNebulae(ctx, globalScale) {
       ns.forEach(n => { spread = Math.max(spread, Math.hypot(n.x - cx, n.y - cy)); });
       const R = Math.min(spread + 105, 230);
 
-      ctx.globalAlpha = labelAlpha * 0.75;
-      ctx.font = `${11.5 / globalScale}px -apple-system, "PingFang SC", sans-serif`;
-      ctx.fillStyle = hexToRgba(g.color, 0.9);
+      ctx.globalAlpha = labelAlpha * 0.88;
+      ctx.font = `${12 / globalScale}px -apple-system, "PingFang SC", sans-serif`;
+      ctx.fillStyle = hexToRgba(g.color, 0.95);
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+      ctx.shadowBlur = 6 / globalScale;
       ctx.fillText(g.name, cx, cy - R * 0.72);
+      ctx.shadowBlur = 0;
       ctx.globalAlpha = 1;
     });
   }

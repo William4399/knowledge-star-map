@@ -243,8 +243,9 @@ function updateStatus() {
   const litCount = Object.keys(state.lit).length;
   const plan = buildPlan();
   const next = plan.ready[0];
-  statusBar.innerHTML = `已点亮 <b>${litCount}</b> / ${Data.nodes.length} · ${escapeHtml(role.name)}<br>
-    ${next ? `推荐下一颗：${escapeHtml(next.node.name)}` : '当前可挑战节点已完成'} · 滚轮缩放 · 点击星星`;
+  statusBar.innerHTML = `
+    <span class="status-line">已点亮 <b>${litCount}</b> / ${Data.nodes.length} · ${escapeHtml(role.name)}</span>
+    <span class="status-line dim">${next ? `下一颗：${escapeHtml(next.node.name)}` : '当前可挑战节点已完成'} · 滚轮缩放 · 点击星星</span>`;
 }
 
 function updateDirectionChip() {
