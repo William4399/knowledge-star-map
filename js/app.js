@@ -4,14 +4,16 @@ import {
 import {
   load, getState, subscribe, isLit, isClaimed, unlightNode, setDirection, setHighlight
 } from './store.js';
-import { initBackground } from './background.js';
+import { initBackground, setBackgroundActive } from './background.js';
 import {
-  initGraph, resetView, focusNode, setHighlight as setGraphHighlight, resize as resizeGraph
+  initGraph, resetView, focusNode, setHighlight as setGraphHighlight,
+  resize as resizeGraph, setGraphActive
 } from './graph.js';
 import { openChallenge } from './challenge.js';
 import { buildPlan, renderPath } from './path.js';
 import { renderProfile } from './profile.js';
 import { openOnboarding } from './onboarding.js';
+import { openNodeList } from './nodelist.js';
 import { escapeHtml, toast, confirmDialog } from './util.js';
 
 const views = {
@@ -55,6 +57,11 @@ function setView(name, opts = {}) {
   });
 
   closeDetail();
+
+  // 非星图视图或页面隐藏时停掉星图与背景动画，省电降耗
+  const animate = name === 'graph' && !document.hidden;
+  setGraphActive(animate);
+  setBackgroundActive(animate);
 
   if (name === 'graph') {
     updateHighlight();
@@ -101,6 +108,24 @@ function wireNav() {
   document.getElementById('reset-view').addEventListener('click', () => {
     resetView();
     closeDetail();
+  });
+
+  document.getElementById('node-list').addEventListener('click', () => {
+    openNodeList({
+      onSelect: id => {
+        setView('graph');
+        setTimeout(() => {
+          focusNode(id);
+          openDetail(id);
+        }, 90);
+      }
+    });
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    const animate = !document.hidden && currentView === 'graph';
+    setGraphActive(animate);
+    setBackgroundActive(animate);
   });
 
   highlightBtn.addEventListener('click', () => {

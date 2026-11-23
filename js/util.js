@@ -58,7 +58,7 @@ export function downloadText(filename, text) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function trapFocus(container, e) {
+export function trapFocus(container, e) {
   if (e.key !== 'Tab') return;
   const items = [...container.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
     .filter(el => el.offsetParent !== null);

@@ -199,6 +199,46 @@ body[data-view="profile"] .topbar {
   z-index: 25;
 }
 
+/* ============ 悬停浮层 ============ */
+/* 关闭 force-graph 自带 tooltip，改用自定义浮层 */
+.graph-tooltip { display: none !important; }
+.node-tip {
+  position: absolute; top: 0; left: 0;
+  z-index: 26;
+  pointer-events: none;
+  min-width: 126px; max-width: 236px;
+  padding: 9px 12px 10px;
+  border-radius: 11px;
+  background: linear-gradient(180deg, rgba(14, 21, 36, 0.96), rgba(8, 13, 24, 0.97));
+  border: 1px solid rgba(150, 190, 240, 0.22);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column; gap: 4px;
+  will-change: transform;
+}
+.node-tip[hidden] { display: none !important; }
+.node-tip b {
+  font-size: 12.5px; font-weight: 500; color: #eef6ff;
+  letter-spacing: 0.3px; line-height: 1.35;
+}
+.node-tip .tip-meta {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10.5px; color: #91a2ba;
+}
+.node-tip .tip-meta i {
+  width: 6px; height: 6px; border-radius: 50%;
+  flex: none; box-shadow: 0 0 6px currentColor;
+}
+.node-tip .tip-meta em {
+  font-style: normal; margin-left: auto; color: #6b7a94;
+  letter-spacing: 0.3px;
+}
+.node-tip .tip-meta em.lit { color: #6ce7a8; }
+.node-tip .tip-meta em.claimed { color: #c8b48a; }
+.node-tip .tip-hint {
+  font-size: 9.5px; color: #5f6c84; letter-spacing: 0.2px;
+}
+
 /* ============ 详情卡 ============ */
 .detail-card {
   position: absolute; top: 50%; right: 22px;
@@ -915,6 +955,101 @@ body[data-view="profile"] .topbar {
 }
 .direction-modal { width: min(760px, 94vw); }
 
+/* ============ 节点清单 ============ */
+.nodelist-modal {
+  width: min(620px, 94vw);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.nodelist-modal .modal-head { flex: none; margin-bottom: 14px; }
+.nl-tools { flex: none; display: flex; flex-direction: column; gap: 9px; margin-bottom: 12px; }
+.nl-search {
+  width: 100%;
+  padding: 9px 13px;
+  font-size: 12.5px;
+  color: #dfeaf9;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(150, 185, 235, 0.16);
+  border-radius: 9px;
+  outline: none;
+  transition: border-color 0.18s, background 0.18s;
+}
+.nl-search::placeholder { color: #5f6c84; }
+.nl-search:focus { border-color: rgba(108, 231, 168, 0.45); background: rgba(255, 255, 255, 0.06); }
+.nl-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.nl-filter {
+  border: 1px solid rgba(150, 185, 235, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  color: #8b98ad;
+  font-size: 11px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  transition: all 0.18s;
+}
+.nl-filter:hover { color: #d9e7fb; }
+.nl-filter.active {
+  color: #b6f3d6;
+  background: rgba(80, 220, 150, 0.1);
+  border-color: rgba(108, 231, 168, 0.4);
+}
+.nl-body {
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto;
+  margin: 0 -4px; padding: 0 4px 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(140, 175, 230, 0.25) transparent;
+}
+.nl-group { margin-bottom: 14px; }
+.nl-group h3 {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 10px; font-weight: 500; letter-spacing: 1.2px;
+  color: #7d8ba1; text-transform: uppercase;
+  margin-bottom: 6px; padding-bottom: 5px;
+  border-bottom: 1px solid rgba(150, 185, 235, 0.07);
+}
+.nl-group h3 i { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+.nl-group h3 em { font-style: normal; margin-left: auto; color: #4e5a70; letter-spacing: 0; }
+.nl-item {
+  width: 100%;
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #c6d3e4;
+  text-align: left;
+  transition: background 0.16s, border-color 0.16s;
+}
+.nl-item:hover, .nl-item:focus-visible {
+  background: rgba(120, 170, 240, 0.08);
+  border-color: rgba(150, 195, 245, 0.18);
+  outline: none;
+}
+.nl-dot { width: 5px; height: 5px; border-radius: 50%; flex: none; opacity: 0.85; }
+.nl-name {
+  font-size: 12.5px; flex: 1 1 auto; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.nl-imp { font-size: 9.5px; color: #5f6c84; letter-spacing: 0.4px; flex: none; }
+.nl-badge {
+  flex: none;
+  font-size: 9.5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #6b7a94;
+  background: rgba(255, 255, 255, 0.04);
+}
+.nl-item.lit .nl-name { color: #a9ebcd; }
+.nl-item.lit .nl-badge { color: #6ce7a8; background: rgba(80, 220, 150, 0.1); }
+.nl-item.claimed .nl-badge { color: #c8b48a; background: rgba(200, 180, 138, 0.1); }
+.nl-item.unlit .nl-dot { opacity: 0.5; }
+.nl-empty { flex: none; text-align: center; padding: 26px 0; font-size: 12px; color: #5f6c84; }
+.nl-hint {
+  flex: none; margin-top: 10px;
+  font-size: 9.5px; color: #4e5a70;
+  letter-spacing: 0.3px; text-align: right;
+}
+
 /* ============ Toast ============ */
 .toast-root {
   position: fixed; left: 50%; bottom: 26px;
@@ -1064,6 +1199,8 @@ body[data-view="profile"] .topbar {
   .role-grid { grid-template-columns: 1fr 1fr; }
   .summary-grid { grid-template-columns: 1fr 1fr; }
   .challenge-meta { grid-template-columns: 1fr 1fr; }
+  .nl-imp { display: none; }
+  .nl-body { max-height: none; }
   .toast-root { bottom: 84px; }
   .page-foot { font-size: 9.5px; }
 }

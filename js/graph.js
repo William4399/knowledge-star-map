@@ -1,6 +1,6 @@
 import { Data, galaxyOf } from './data.js';
 import { isLit, isClaimed } from './store.js';
-import { TAU, hexToRgba, clamp01, reduceMotion, nowSec } from './util.js';
+import { TAU, hexToRgba, clamp01, reduceMotion, nowSec, escapeHtml } from './util.js';
 
 let graph = null;
 let container = null;
@@ -8,12 +8,20 @@ let hoveredNode = null;
 let highlight = new Set();
 let initZoom = 0.85;
 let handlers = {};
+let tipEl = null;
+let pointer = { x: 0, y: 0 };
+let graphActive = true;
 
 function starRadius(node) {
   return 2.6 + node.importance * 1.7;
 }
-function nodeLabelAlpha(z) {
-  return clamp01((z - 1.05) / 0.5);
+function labelThreshold(node) {
+  if (node.core || node.importance >= 5) return 0.74;
+  if (node.importance >= 4) return 0.96;
+  return 1.16;
+}
+function nodeLabelAlpha(z, node) {
+  return clamp01((z - labelThreshold(node)) / 0.42);
 }
 function galaxyLabelAlpha(z) {
   return clamp01(1 - (z - 0.85) / 0.5);
@@ -25,6 +33,14 @@ export function initGraph(el, options = {}) {
   }
   container = el;
   handlers = options;
+
+  container.addEventListener('pointermove', e => {
+    const rect = container.getBoundingClientRect();
+    pointer.x = e.clientX - rect.left;
+    pointer.y = e.clientY - rect.top;
+    if (hoveredNode) placeTip();
+  });
+  container.addEventListener('pointerleave', hideTip);
 
   const nodes = Data.nodes.map(n => {
     const g = Data.galaxyById[n.galaxy];
@@ -61,10 +77,18 @@ export function initGraph(el, options = {}) {
     .onNodeHover(n => {
       hoveredNode = n || null;
       container.style.cursor = n ? 'pointer' : 'grab';
+      if (n) showTip(n);
+      else hideTip();
     })
     .onBackgroundClick(() => {
       if (handlers.onBackgroundClick) handlers.onBackgroundClick();
     });
+
+  // ForceGraph 初始化时会清空容器，浮层必须在其后挂载
+  tipEl = document.createElement('div');
+  tipEl.className = 'node-tip';
+  tipEl.hidden = true;
+  container.appendChild(tipEl);
 
   graph.d3Force('link').distance(l => (l.type === 'prerequisite' ? 72 : 108));
   graph.d3Force('charge').strength(-185);
@@ -120,6 +144,51 @@ export function focusNode(id) {
 
 export function setHighlight(ids) {
   highlight = new Set(ids || []);
+}
+
+/* 离开星图或页面隐藏时暂停渲染，回来再恢复 */
+export function setGraphActive(active) {
+  if (!graph || active === graphActive) return;
+  graphActive = active;
+  if (active) {
+    resize();
+    graph.resumeAnimation();
+  } else {
+    hideTip();
+    hoveredNode = null;
+    graph.pauseAnimation();
+  }
+}
+
+function showTip(node) {
+  if (!tipEl) return;
+  const g = galaxyOf(node);
+  const lit = isLit(node.id);
+  const claimed = isClaimed(node.id);
+  const status = lit ? '已点亮' : claimed ? '待验证' : '未点亮';
+  tipEl.innerHTML = `
+    <b>${escapeHtml(node.name)}</b>
+    <span class="tip-meta"><i style="background:${g ? g.color : '#9dc7ff'}"></i>${escapeHtml(g ? g.name : '未分类')}<em class="${lit ? 'lit' : claimed ? 'claimed' : ''}">${status}</em></span>
+    <span class="tip-hint">重要度 ${node.importance}/5 · 点击查看详情</span>`;
+  tipEl.hidden = false;
+  placeTip();
+}
+
+function hideTip() {
+  if (tipEl) tipEl.hidden = true;
+}
+
+function placeTip() {
+  if (!tipEl || !hoveredNode) return;
+  const W = container.clientWidth;
+  const H = container.clientHeight;
+  const w = tipEl.offsetWidth;
+  const h = tipEl.offsetHeight;
+  let x = pointer.x + 16;
+  let y = pointer.y + 18;
+  if (x + w > W - 10) x = pointer.x - w - 16;
+  if (y + h > H - 10) y = pointer.y - h - 14;
+  tipEl.style.transform = `translate(${Math.max(10, x)}px, ${Math.max(10, y)}px)`;
 }
 
 export function getHighlight() {
@@ -274,8 +343,8 @@ function drawStarNode(node, ctx, globalScale) {
 
   ctx.globalCompositeOperation = 'source-over';
 
-  // 名称：放大时显现
-  const labelAlpha = nodeLabelAlpha(globalScale);
+  // 名称：随缩放分级显现，悬停时始终可读
+  const labelAlpha = hovered ? 1 : nodeLabelAlpha(globalScale, node);
   if (labelAlpha > 0.02) {
     ctx.globalAlpha = labelAlpha;
     ctx.font = `${(10 + node.importance * 0.8) / globalScale}px -apple-system, "PingFang SC", sans-serif`;
@@ -287,16 +356,6 @@ function drawStarNode(node, ctx, globalScale) {
     ctx.fillText(node.name, node.x, node.y + r * 1.9 + 3 / globalScale);
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
-  }
-
-  // 悬停提示
-  if (hovered) {
-    ctx.font = `${10.5 / globalScale}px -apple-system, "PingFang SC", sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = 'rgba(160,205,255,0.85)';
-    const tip = lit ? '已点亮 · ' + node.name : claimed ? '待验证 · ' + node.name : '点击查看 · ' + node.name;
-    ctx.fillText(tip, node.x, node.y - r * 3.4 - 10 / globalScale);
   }
 
   ctx.restore();

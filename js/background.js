@@ -3,6 +3,7 @@ import { TAU, reduceMotion } from './util.js';
 const canvas = document.getElementById('starfield');
 const ctx = canvas.getContext('2d');
 let bgStars = [];
+let running = false;
 
 function build() {
   const w = window.innerWidth;
@@ -28,6 +29,7 @@ function build() {
 }
 
 function draw(t) {
+  if (!running) return;
   const w = canvas.width;
   const h = canvas.height;
   ctx.clearRect(0, 0, w, h);
@@ -49,8 +51,15 @@ function draw(t) {
   requestAnimationFrame(draw);
 }
 
+export function setBackgroundActive(active) {
+  if (active === running) return;
+  running = active;
+  if (active) requestAnimationFrame(draw);
+}
+
 export function initBackground() {
   build();
   window.addEventListener('resize', build);
+  running = true;
   requestAnimationFrame(draw);
 }
