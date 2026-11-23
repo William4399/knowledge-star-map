@@ -20,7 +20,28 @@ function blank() {
       quiz: { correct: 0, total: 0, at: null }
     },
     settings: { highlight: true },
-    counters: { attempts: 0, answered: 0, correct: 0 }
+    counters: { attempts: 0, answered: 0, correct: 0 },
+    plan: null
+  };
+}
+
+function sanitizePlan(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const weeks = [4, 6, 8].includes(Number(raw.weeks)) ? Number(raw.weeks) : 4;
+  const entries = Array.isArray(raw.entries)
+    ? raw.entries
+      .filter(e => e && typeof e.node === 'string' && Number.isFinite(Number(e.week)))
+      .map(e => ({
+        week: Math.max(0, Math.min(weeks - 1, Math.floor(Number(e.week)))),
+        node: e.node,
+        hours: Number(e.hours) > 0 ? Math.round(Number(e.hours) * 2) / 2 : 4
+      }))
+    : [];
+  return {
+    direction: typeof raw.direction === 'string' && raw.direction ? raw.direction : 'backend',
+    weeks,
+    generatedAt: Number(raw.generatedAt) || Date.now(),
+    entries
   };
 }
 
@@ -73,6 +94,7 @@ function sanitize(raw) {
       correct: Number(raw.counters.correct) || 0
     };
   }
+  base.plan = sanitizePlan(raw.plan);
   return base;
 }
 
@@ -188,6 +210,15 @@ export function setDirection(direction) {
   if (state.direction === direction) return;
   state.direction = direction;
   emit('direction', { direction });
+}
+
+export function getPlan() {
+  return state.plan;
+}
+
+export function setPlan(plan) {
+  state.plan = plan;
+  emit('plan', { plan });
 }
 
 export function setHighlight(enabled) {

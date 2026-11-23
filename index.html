@@ -27,6 +27,7 @@
     <nav class="tabs" id="tabs" role="tablist" aria-label="主导航">
       <button class="tab active" data-view="graph" role="tab" aria-selected="true">星图</button>
       <button class="tab" data-view="path" role="tab" aria-selected="false" tabindex="-1">成长路径</button>
+      <button class="tab" data-view="plan" role="tab" aria-selected="false" tabindex="-1">学习计划</button>
       <button class="tab" data-view="profile" role="tab" aria-selected="false" tabindex="-1">我的</button>
     </nav>
 
@@ -55,6 +56,10 @@
     <div class="page-wrap" id="path-root"></div>
   </section>
 
+  <section id="view-plan" class="view view-page" hidden aria-label="学习计划">
+    <div class="page-wrap" id="plan-root"></div>
+  </section>
+
   <section id="view-profile" class="view view-page" hidden aria-label="我的星空">
     <div class="page-wrap" id="profile-root"></div>
   </section>
@@ -62,6 +67,7 @@
   <nav class="bottom-nav" aria-label="移动端导航">
     <button class="bottom-tab active" data-view="graph"><span aria-hidden="true">✦</span><em>星图</em></button>
     <button class="bottom-tab" data-view="path"><span aria-hidden="true">◈</span><em>路径</em></button>
+    <button class="bottom-tab" data-view="plan"><span aria-hidden="true">✧</span><em>计划</em></button>
     <button class="bottom-tab" data-view="profile"><span aria-hidden="true">◉</span><em>我的</em></button>
   </nav>
 

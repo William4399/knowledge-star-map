@@ -11,6 +11,7 @@ import {
 } from './graph.js';
 import { openChallenge } from './challenge.js';
 import { buildPlan, renderPath } from './path.js';
+import { renderPlan } from './plan.js';
 import { renderProfile } from './profile.js';
 import { openOnboarding } from './onboarding.js';
 import { openNodeList } from './nodelist.js';
@@ -19,9 +20,11 @@ import { escapeHtml, toast, confirmDialog } from './util.js';
 const views = {
   graph: document.getElementById('view-graph'),
   path: document.getElementById('view-path'),
+  plan: document.getElementById('view-plan'),
   profile: document.getElementById('view-profile')
 };
 const pathRoot = document.getElementById('path-root');
+const planRoot = document.getElementById('plan-root');
 const profileRoot = document.getElementById('profile-root');
 const detail = document.getElementById('detail');
 const detailContent = document.getElementById('detail-content');
@@ -68,6 +71,8 @@ function setView(name, opts = {}) {
     updateStatus();
   } else if (name === 'path') {
     renderPathView();
+  } else if (name === 'plan') {
+    renderPlanView();
   } else if (name === 'profile') {
     renderProfileView();
   }
@@ -318,6 +323,26 @@ function renderPathView() {
   });
 }
 
+function renderPlanView() {
+  renderPlan(planRoot, {
+    onChallenge: id => openChallenge(id, {
+      onChange: () => {
+        updateStatus();
+        if (currentView === 'plan') renderPlanView();
+        if (currentView === 'path') renderPathView();
+      }
+    }),
+    onFocus: id => {
+      setView('graph');
+      setTimeout(() => {
+        focusNode(id);
+        openDetail(id);
+      }, 80);
+    },
+    onReplan: () => toast('已根据当前进度重新生成计划', 'success')
+  });
+}
+
 function renderProfileView() {
   renderProfile(profileRoot, {
     onDirection: id => {
@@ -441,9 +466,12 @@ async function boot() {
   const initial = (location.hash || '#graph').slice(1);
   setView(initial, { fromHash: true });
 
-  subscribe(() => {
+  subscribe(({ type }) => {
     updateAll();
+    // 计划自身的写入由计划页负责重绘，避免递归渲染
+    if (type === 'plan') return;
     if (currentView === 'path') renderPathView();
+    if (currentView === 'plan') renderPlanView();
     if (currentView === 'profile') renderProfileView();
     if (currentView === 'graph' && selectedId) openDetail(selectedId);
   });

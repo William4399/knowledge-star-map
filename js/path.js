@@ -2,7 +2,7 @@ import { Data, nodeById, galaxyOf, unlocked, missingPrereqs, questionsFor } from
 import { getState, setDirection } from './store.js';
 import { escapeHtml, starsHtml } from './util.js';
 
-function unlockPotential(nodeId, lit, cache) {
+export function unlockPotential(nodeId, lit, cache) {
   if (cache && cache[nodeId] != null) return cache[nodeId];
   const fake = { ...lit, [nodeId]: 1 };
   let count = 0;
@@ -14,7 +14,7 @@ function unlockPotential(nodeId, lit, cache) {
   return count;
 }
 
-function scoreNode(node, role, lit, state, potential) {
+export function scoreNode(node, role, lit, state, potential) {
   const weight = role.galaxyWeights[node.galaxy] ?? 0.3;
   let score = weight * 40 + node.importance * 4 - node.complexity * 2 + potential * 3;
   if (node.core) score += 2;
