@@ -17,3 +17,7 @@ venv/
 # 临时文件
 *.log
 *.tmp
+
+# 本地凭据
+.token
+.git-credentials
