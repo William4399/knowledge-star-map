@@ -1,0 +1,160 @@
+{
+  "meta": {
+    "version": "1.0",
+    "note": "岗位 JD 关键词与比赛信息为人工整理参考，不代表任何企业或赛事的官方要求。"
+  },
+  "roles": [
+    {
+      "id": "backend",
+      "name": "后端开发",
+      "short": "服务端 · 高并发 · 业务架构",
+      "tagline": "把业务规则沉淀成稳定、可扩展的服务",
+      "description": "以后端服务为核心，要求能完成接口设计、数据库建模、缓存与异步处理，并理解系统在流量下的瓶颈与取舍。",
+      "galaxyWeights": {
+        "backend": 1.0, "data": 0.9, "net": 0.8, "sys": 0.7, "se": 0.7,
+        "eng": 0.7, "sec": 0.5, "algo": 0.55, "lang": 0.6, "math": 0.2, "ai": 0.2
+      },
+      "required": ["c", "sys_os", "net_tcp", "net_http", "db_rel", "db_sql", "be_framework", "be_api", "be_sysdesign", "eng_git", "eng_test"],
+      "anyOfGroups": [
+        { "name": "Java 或 Python", "ids": ["java", "python"] }
+      ],
+      "jobs": [
+        { "title": "后端开发工程师", "keywords": ["Java/Go", "Spring", "MySQL", "Redis", "消息队列"] },
+        { "title": "服务端研发工程师", "keywords": ["高并发", "分布式", "接口设计", "性能优化"] },
+        { "title": "Java 开发工程师", "keywords": ["JVM", "Spring Boot", "MyBatis", "微服务"] }
+      ],
+      "competitions": [
+        { "name": "中国大学生服务外包创新创业大赛", "note": "企业命题，偏完整系统交付" },
+        { "name": "蓝桥杯（Java / C++ 组）", "note": "算法与基础工程能力" },
+        { "name": "阿里云天池大数据竞赛", "note": "可与后端 + 数据能力结合" }
+      ],
+      "skills": ["接口与资源建模", "SQL 与索引优化", "缓存与消息队列", "系统容量估算"]
+    },
+    {
+      "id": "frontend",
+      "name": "前端 / 全栈",
+      "short": "交互体验 · 工程化 · 端到端",
+      "tagline": "让复杂能力变成用户愿意使用的界面",
+      "description": "以浏览器端体验为核心，兼顾接口与工程化。重点在 HTML/CSS/JavaScript、渲染性能、状态管理与端到端交付。",
+      "galaxyWeights": {
+        "net": 1.0, "lang": 0.85, "backend": 0.6, "se": 0.6, "eng": 0.65,
+        "algo": 0.4, "data": 0.35, "sys": 0.3, "sec": 0.35, "ai": 0.2, "math": 0.1
+      },
+      "required": ["web_html", "js", "net_http", "web_browser", "be_api", "eng_git", "eng_test", "se_arch"],
+      "anyOfGroups": [
+        { "name": "后端语言（Java / Python / C++）", "ids": ["java", "python", "cpp"] }
+      ],
+      "jobs": [
+        { "title": "前端开发工程师", "keywords": ["JavaScript", "React/Vue", "工程化", "性能优化"] },
+        { "title": "全栈开发工程师", "keywords": ["Node.js", "RESTful", "数据库", "部署"] },
+        { "title": "Web 前端工程师", "keywords": ["HTML/CSS", "浏览器", "响应式", "可访问性"] }
+      ],
+      "competitions": [
+        { "name": "中国大学生计算机设计大赛", "note": "Web 应用与交互设计方向" },
+        { "name": "微信小程序应用开发赛", "note": "端到端产品交付" },
+        { "name": "中国高校计算机大赛 · 移动应用创新赛", "note": "产品与前端实现" }
+      ],
+      "skills": ["语义化页面结构", "浏览器渲染与事件循环", "接口联调", "前端工程化"]
+    },
+    {
+      "id": "ai",
+      "name": "AI 应用",
+      "short": "机器学习 · 大模型 · 数据",
+      "tagline": "把模型能力接进真实业务，而不是只跑通 demo",
+      "description": "以 AI 应用落地为核心，需要数学与 Python 基础、数据处理、模型评估，以及 RAG / 提示工程等大模型工程能力。",
+      "galaxyWeights": {
+        "ai": 1.0, "math": 0.75, "lang": 0.7, "data": 0.5, "algo": 0.5,
+        "eng": 0.5, "backend": 0.4, "net": 0.3, "sys": 0.3, "sec": 0.2, "se": 0.3
+      },
+      "required": ["python", "math_linear", "math_prob", "ai_data", "ai_ml", "ai_llm", "ai_rag", "eng_git"],
+      "anyOfGroups": [],
+      "jobs": [
+        { "title": "AI 应用开发工程师", "keywords": ["Python", "RAG", "Prompt", "向量数据库"] },
+        { "title": "算法工程师（应用方向）", "keywords": ["机器学习", "特征工程", "模型评估", "部署"] },
+        { "title": "数据分析 / 数据挖掘", "keywords": ["Pandas", "SQL", "指标体系", "可视化"] }
+      ],
+      "competitions": [
+        { "name": "中国大学生计算机设计大赛 · 人工智能赛道", "note": "应用型 AI 作品" },
+        { "name": "Kaggle 竞赛", "note": "数据建模与实验能力" },
+        { "name": "天池 / DataFountain 算法赛", "note": "中文场景数据竞赛" }
+      ],
+      "skills": ["数据处理与特征工程", "模型评估与实验设计", "RAG 与向量检索", "提示工程与幻觉控制"]
+    },
+    {
+      "id": "security",
+      "name": "安全工程",
+      "short": "Web 安全 · 认证 · 攻防",
+      "tagline": "站在攻击者视角，守住系统的边界",
+      "description": "以 Web 与系统安全为核心，要求理解常见漏洞成因、认证授权模型、密码学基础，并具备一定的系统与网络知识。",
+      "galaxyWeights": {
+        "sec": 1.0, "net": 0.85, "sys": 0.75, "backend": 0.5, "data": 0.45,
+        "lang": 0.5, "eng": 0.45, "algo": 0.4, "math": 0.4, "ai": 0.2, "se": 0.2
+      },
+      "required": ["c", "sys_arch", "sys_os", "net_tcp", "net_http", "sec_web", "sec_crypto", "sec_auth", "db_sql", "eng_git"],
+      "anyOfGroups": [],
+      "jobs": [
+        { "title": "安全工程师", "keywords": ["OWASP", "漏洞挖掘", "安全编码", "应急响应"] },
+        { "title": "渗透测试工程师", "keywords": ["Web 渗透", "内网", "工具链", "报告"] },
+        { "title": "应用安全工程师", "keywords": ["SDL", "代码审计", "认证授权", "数据安全"] }
+      ],
+      "competitions": [
+        { "name": "CTF 网络安全竞赛（强网杯等）", "note": "Web / Pwn / Crypto 方向" },
+        { "name": "全国大学生信息安全竞赛", "note": "作品赛与创新实践赛" },
+        { "name": "护网杯 / 各类攻防演练", "note": "偏实战对抗" }
+      ],
+      "skills": ["漏洞原理与复现", "认证授权设计", "安全编码与审计", "网络与系统基础"]
+    },
+    {
+      "id": "infra",
+      "name": "系统 / 基础设施",
+      "short": "操作系统 · 网络 · SRE",
+      "tagline": "让成千上万台机器稳定地一起工作",
+      "description": "以操作系统、网络与工程效率为核心，关注资源调度、性能、可靠性与自动化，是后端深水区与云原生方向的基础。",
+      "galaxyWeights": {
+        "sys": 1.0, "net": 0.85, "eng": 0.75, "backend": 0.6, "data": 0.55,
+        "lang": 0.6, "algo": 0.5, "sec": 0.45, "se": 0.35, "math": 0.25, "ai": 0.15
+      },
+      "required": ["c", "sys_arch", "sys_os", "sys_process", "sys_memory", "sys_linux", "net_tcp", "eng_git", "eng_ci"],
+      "anyOfGroups": [
+        { "name": "C++ 或 Java", "ids": ["cpp", "java"] }
+      ],
+      "jobs": [
+        { "title": "基础架构工程师", "keywords": ["Linux", "容器", "调度", "存储"] },
+        { "title": "SRE / 运维开发", "keywords": ["可观测性", "自动化", "容量", "故障定位"] },
+        { "title": "云原生研发工程师", "keywords": ["Kubernetes", "Docker", "服务网格", "CI/CD"] }
+      ],
+      "competitions": [
+        { "name": "华为软件精英挑战赛", "note": "系统与算法综合" },
+        { "name": "开源之夏", "note": "参与真实开源基础设施项目" },
+        { "name": "中国高校计算机大赛 · 网络技术挑战赛", "note": "网络与系统方向" }
+      ],
+      "skills": ["进程与内存模型", "网络协议排障", "自动化与 CI/CD", "性能与可靠性分析"]
+    },
+    {
+      "id": "algo",
+      "name": "算法与竞赛",
+      "short": "数据结构 · 算法 · 竞赛",
+      "tagline": "用更少的资源，解更难的问题",
+      "description": "以算法设计与复杂度分析为核心，适合准备算法岗、ACM/ICPC 或笔面试的同学。",
+      "galaxyWeights": {
+        "algo": 1.0, "math": 0.8, "lang": 0.7, "ai": 0.4, "sys": 0.35,
+        "data": 0.3, "eng": 0.5, "net": 0.2, "se": 0.25, "sec": 0.25, "backend": 0.25
+      },
+      "required": ["algo_complexity", "ds_array", "ds_stack", "ds_tree", "ds_hash", "algo_sort", "algo_dp", "ds_graph", "math_discrete"],
+      "anyOfGroups": [
+        { "name": "C++ 或 Java 或 Python", "ids": ["cpp", "java", "python"] }
+      ],
+      "jobs": [
+        { "title": "算法工程师", "keywords": ["数据结构", "复杂度", "建模", "论文复现"] },
+        { "title": "搜索 / 推荐算法", "keywords": ["图算法", "特征", "排序", "评估"] },
+        { "title": "后端 / 客户端（算法加分）", "keywords": ["手撕代码", "笔试", "优化"] }
+      ],
+      "competitions": [
+        { "name": "ACM-ICPC / CCPC", "note": "团队算法竞赛" },
+        { "name": "蓝桥杯（C++ / Java / Python 组）", "note": "个人算法与工程基础" },
+        { "name": "LeetCode 周赛 / 双周赛", "note": "持续训练与排名" }
+      ],
+      "skills": ["复杂度分析", "经典数据结构", "动态规划与图论", "竞赛级代码实现"]
+    }
+  ]
+}
