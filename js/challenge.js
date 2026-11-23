@@ -271,7 +271,7 @@ export function openChallenge(nodeId, options = {}) {
         <p class="review-stem">${escapeHtml(q.stem)}</p>
         <p class="your-answer">你的作答：${yourAnswer}</p>
         ${keywordHtml}
-        <p class="explain">${escapeHtml(q.explain || '')}</p>
+        ${q.explain ? `<p class="explain">${escapeHtml(q.explain)}</p>` : ''}
       </article>`;
     }).join('');
 
