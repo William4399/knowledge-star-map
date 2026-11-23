@@ -20,10 +20,12 @@ export function openChallenge(nodeId, options = {}) {
     <div class="modal challenge-modal" role="dialog" aria-modal="true" aria-labelledby="ch-title">
       <button class="modal-close" data-act="close" aria-label="关闭挑战">✕</button>
       <div class="modal-body" id="ch-body"></div>
+      <div class="modal-foot" id="ch-foot"></div>
     </div>`;
   document.getElementById('modal-root').appendChild(overlay);
 
   const body = overlay.querySelector('#ch-body');
+  const foot = overlay.querySelector('#ch-foot');
   const previousFocus = document.activeElement;
   const local = { index: 0, answers: {}, phase: 'intro', result: null };
   const g = galaxyOf(node);
@@ -86,6 +88,10 @@ export function openChallenge(nodeId, options = {}) {
     </header>`;
   }
 
+  function setActions(html) {
+    foot.innerHTML = `<div class="modal-actions">${html}</div>`;
+  }
+
   function intro() {
     local.phase = 'intro';
     const record = getState().records[node.id];
@@ -109,11 +115,10 @@ export function openChallenge(nodeId, options = {}) {
           <li>简答题：命中关键词达到要求即通过，否则只给少量部分分。</li>
           <li>总分 ≥ ${threshold} 且所有简答题达标，才算通过。</li>
         </ul>
-      </div>
-      <div class="modal-actions">
-        <button class="btn ghost" data-act="close">稍后再来</button>
-        <button class="btn primary" data-act="start">${lit ? '重新挑战' : '开始挑战'}</button>
       </div>`;
+    setActions(`
+        <button class="btn ghost" data-act="close">稍后再来</button>
+        <button class="btn primary" data-act="start">${lit ? '重新挑战' : '开始挑战'}</button>`);
     focusTitle();
   }
 
@@ -154,13 +159,12 @@ export function openChallenge(nodeId, options = {}) {
       <div class="question">
         <h2 class="question-stem">${escapeHtml(q.stem)}</h2>
         ${inputHtml}
-      </div>
-      <div class="modal-actions">
+      </div>`;
+    setActions(`
         <button class="btn ghost" data-act="prev" ${local.index === 0 ? 'disabled' : ''}>上一题</button>
         ${isLast
           ? '<button class="btn primary" data-act="submit">提交答卷</button>'
-          : '<button class="btn primary" data-act="next">下一题</button>'}
-      </div>`;
+          : '<button class="btn primary" data-act="next">下一题</button>'}`);
     focusTitle(true);
   }
 
@@ -245,7 +249,9 @@ export function openChallenge(nodeId, options = {}) {
       return `<article class="review ${d.ok ? 'ok' : 'bad'}">
         <div class="review-head">
           <span class="review-index">${i + 1}</span>
-          <span class="review-score">${(d.score * 1).toFixed(1)} / 1.0</span>
+          ${q.type === 'short'
+            ? `<span class="review-score ${d.ok ? 'ok' : 'bad'}">命中 ${d.hits.length}/${q.keywords.length} 关键词</span>`
+            : `<span class="review-score ${d.ok ? 'ok' : 'bad'}">${d.ok ? '回答正确' : '回答错误'}</span>`}
         </div>
         <p class="review-stem">${escapeHtml(q.stem)}</p>
         <p class="your-answer">你的作答：${yourAnswer}</p>
@@ -269,11 +275,10 @@ export function openChallenge(nodeId, options = {}) {
           : `距离及格线还差 ${Math.max(0, threshold - total)} 分。看完解析再试一次，通常就能过。`}</p>
       </div>
       ${shortNote}
-      <div class="review-list">${review}</div>
-      <div class="modal-actions">
+      <div class="review-list">${review}</div>`;
+    setActions(`
         <button class="btn ghost" data-act="done">${passed ? '回到星图' : '稍后再来'}</button>
-        <button class="btn ${passed ? 'primary' : 'ghost'}" data-act="retry">${passed ? '再刷一次' : '再试一次'}</button>
-      </div>`;
+        <button class="btn ${passed ? 'primary' : 'ghost'}" data-act="retry">${passed ? '再刷一次' : '再试一次'}</button>`);
     focusTitle();
   }
 

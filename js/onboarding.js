@@ -55,10 +55,12 @@ export function openOnboarding(options = {}) {
         <button class="modal-close" data-act="close" aria-label="关闭引导">✕</button>
       </div>
       <div class="onboard-body" id="ob-body"></div>
+      <div class="onboard-foot" id="ob-foot"></div>
     </div>`;
   document.getElementById('modal-root').appendChild(overlay);
 
   const body = overlay.querySelector('#ob-body');
+  const foot = overlay.querySelector('#ob-foot');
   const stepsEl = overlay.querySelector('#ob-steps');
   const previousFocus = document.activeElement;
 
@@ -150,8 +152,30 @@ export function openOnboarding(options = {}) {
     else if (draft.step === 2) renderQuiz();
     else if (draft.step === 3) renderDirection();
     else renderSummary();
+    foot.innerHTML = `<div class="modal-actions">${actionsForStep()}</div>`;
     const title = body.querySelector('h2');
     if (title) title.focus({ preventScroll: true });
+  }
+
+  function actionsForStep() {
+    if (draft.step === 0) {
+      return `<button class="btn ghost" data-act="skip">跳过，直接逛星图</button>
+        <button class="btn primary" data-act="next">开始</button>`;
+    }
+    if (draft.step === 1) {
+      return `<button class="btn ghost" data-act="back">上一步</button>
+        <button class="btn primary" data-act="next">下一步</button>`;
+    }
+    if (draft.step === 2) {
+      return `<button class="btn ghost" data-act="back">上一步</button>
+        <button class="btn primary" data-act="next">提交并继续</button>`;
+    }
+    if (draft.step === 3) {
+      return `<button class="btn ghost" data-act="back">上一步</button>
+        <button class="btn primary" data-act="next">生成我的星图</button>`;
+    }
+    return `<button class="btn ghost" data-act="back">返回修改</button>
+      <button class="btn primary" data-act="finish">进入星图</button>`;
   }
 
   function renderWelcome() {
@@ -176,11 +200,7 @@ export function openOnboarding(options = {}) {
           <p>后端 / 前端 / AI / 安全 / 系统 / 算法，路径会随之调整。</p>
         </div>
       </div>
-      <p class="onboard-hint">自评不会直接点亮星星，只有通过客观挑战或摸底答对才会点亮。</p>
-      <div class="modal-actions">
-        <button class="btn ghost" data-act="skip">跳过，直接逛星图</button>
-        <button class="btn primary" data-act="next">开始</button>
-      </div>`;
+      <p class="onboard-hint">自评不会直接点亮星星，只有通过客观挑战或摸底答对才会点亮。</p>`;
   }
 
   function renderProfileStep() {
@@ -218,11 +238,7 @@ export function openOnboarding(options = {}) {
         <span class="muted small">已选 <b data-self-count>${draft.selfRated.size}</b> 项 · 可跳过</span>
       </div>
       <p class="muted small">勾选后标记为「待验证」，不会直接点亮。请只勾选你确定学过、能经得起提问的内容。</p>
-      <div class="self-groups">${selfHtml}</div>
-      <div class="modal-actions">
-        <button class="btn ghost" data-act="back">上一步</button>
-        <button class="btn primary" data-act="next">下一步</button>
-      </div>`;
+      <div class="self-groups">${selfHtml}</div>`;
   }
 
   function renderQuiz() {
@@ -250,11 +266,7 @@ export function openOnboarding(options = {}) {
     body.innerHTML = `
       ${header('第 2 步 · 摸底小测', '用 6 道题校准起点',
         '答对即可点亮对应知识点，答错也没关系，之后可以重新挑战。')}
-      <ol class="quiz-list">${quizHtml}</ol>
-      <div class="modal-actions">
-        <button class="btn ghost" data-act="back">上一步</button>
-        <button class="btn primary" data-act="next">提交并继续</button>
-      </div>`;
+      <ol class="quiz-list">${quizHtml}</ol>`;
   }
 
   function renderDirection() {
@@ -268,11 +280,7 @@ export function openOnboarding(options = {}) {
     body.innerHTML = `
       ${header('第 3 步 · 目标方向', '你现在更想往哪走',
         '方向只影响推荐顺序与岗位匹配，随时可以在「成长路径」里切换。')}
-      <div class="role-grid">${cards}</div>
-      <div class="modal-actions">
-        <button class="btn ghost" data-act="back">上一步</button>
-        <button class="btn primary" data-act="next">生成我的星图</button>
-      </div>`;
+      <div class="role-grid">${cards}</div>`;
   }
 
   function renderSummary() {
@@ -303,11 +311,7 @@ export function openOnboarding(options = {}) {
       ${correctNames.length
         ? `<p class="summary-note">✦ 将点亮：${correctNames.map(escapeHtml).join('、')}</p>`
         : '<p class="summary-note">这次摸底没有答对，没关系，从零开始点亮第一颗星。</p>'}
-      <p class="onboard-hint">建议先点亮 3–5 颗核心星，再进行第一次完整挑战。</p>
-      <div class="modal-actions">
-        <button class="btn ghost" data-act="back">返回修改</button>
-        <button class="btn primary" data-act="finish">进入星图</button>
-      </div>`;
+      <p class="onboard-hint">建议先点亮 3–5 颗核心星，再进行第一次完整挑战。</p>`;
   }
 
   function captureProfile() {
