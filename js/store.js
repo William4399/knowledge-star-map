@@ -56,9 +56,12 @@ function sanitizePlan(raw) {
         hours: Number(e.hours) > 0 ? Math.round(Number(e.hours) * 2) / 2 : 4
       }))
     : [];
+  const weeklyHours = Number(raw.weeklyHours);
   return {
     direction: typeof raw.direction === 'string' && raw.direction ? raw.direction : 'backend',
     weeks,
+    weeklyHours: Number.isFinite(weeklyHours) && weeklyHours >= 4 && weeklyHours <= 40 ? Math.round(weeklyHours) : 16,
+    startAt: Number(raw.startAt) || Number(raw.generatedAt) || Date.now(),
     generatedAt: Number(raw.generatedAt) || Date.now(),
     entries
   };

@@ -340,7 +340,7 @@ function renderPlanView() {
         openDetail(id);
       }, 80);
     },
-    onReplan: () => toast('已根据当前进度重新生成计划', 'success')
+    onReplan: () => toast('已从今天重新排期，任务按当前进度重排', 'success')
   });
 }
 

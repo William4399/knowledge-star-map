@@ -1,13 +1,15 @@
 import { Data, nodeById, galaxyOf, unlocked, missingPrereqs } from './data.js';
 import { getState, setPlan } from './store.js';
-import { escapeHtml, formatDate } from './util.js';
+import { escapeHtml, formatDate, toast, downloadText } from './util.js';
 import { scoreNode, unlockPotential } from './path.js';
+import { buildCalendar } from './ics.js';
 
 const DAY = 24 * 3600 * 1000;
 const WEEK = 7 * DAY;
-const WEEK_HOURS = 16;
 export const HORIZONS = [4, 6, 8];
+export const PACE_OPTIONS = [8, 12, 16, 20];
 const DEFAULT_WEEKS = 4;
+const DEFAULT_PACE = 16;
 
 function hoursFor(node) {
   return Math.round(node.complexity * 2.5 * 2) / 2;
@@ -16,6 +18,11 @@ function hoursFor(node) {
 function md(ts) {
   const d = new Date(ts);
   return `${d.getMonth() + 1}.${d.getDate()}`;
+}
+
+function inputDate(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 /* 按推荐度模拟解锁顺序：每次挑选当前可挑战里得分最高的节点 */
@@ -37,13 +44,13 @@ function buildSequence(role, state, limit) {
   return seq;
 }
 
-function chunkWeeks(seq, weeks) {
+function chunkWeeks(seq, weeks, weekHours) {
   const buckets = Array.from({ length: weeks }, () => []);
   let week = 0;
   let spent = 0;
   for (const node of seq) {
     const hours = hoursFor(node);
-    if (buckets[week].length && spent + hours > WEEK_HOURS) {
+    if (buckets[week].length && spent + hours > weekHours) {
       if (week >= weeks - 1) break;
       week += 1;
       spent = 0;
@@ -54,25 +61,66 @@ function chunkWeeks(seq, weeks) {
   return buckets;
 }
 
-export function createPlan(weeks = DEFAULT_WEEKS) {
+export function createPlan(weeks = DEFAULT_WEEKS, options = {}) {
   const state = getState();
   const role = Data.roleById[state.direction] || Data.roles[0];
   const safeWeeks = HORIZONS.includes(Number(weeks)) ? Number(weeks) : DEFAULT_WEEKS;
-  const buckets = chunkWeeks(buildSequence(role, state, safeWeeks * 5), safeWeeks);
+  const weeklyHours = PACE_OPTIONS.includes(Number(options.weeklyHours))
+    ? Number(options.weeklyHours)
+    : DEFAULT_PACE;
+  const startAt = Number(options.startAt) || Date.now();
+  const buckets = chunkWeeks(buildSequence(role, state, safeWeeks * 5), safeWeeks, weeklyHours);
   const entries = [];
   buckets.forEach((bucket, index) => {
     bucket.forEach(item => entries.push({ week: index, node: item.node.id, hours: item.hours }));
   });
-  return { direction: role.id, weeks: safeWeeks, generatedAt: Date.now(), entries };
+  return { direction: role.id, weeks: safeWeeks, weeklyHours, startAt, generatedAt: Date.now(), entries };
 }
 
 function ensurePlan() {
   const state = getState();
   const plan = state.plan;
   if (plan && Array.isArray(plan.entries) && plan.direction === state.direction) return plan;
-  const next = createPlan(plan && plan.weeks ? plan.weeks : DEFAULT_WEEKS);
+  const next = createPlan(plan && plan.weeks ? plan.weeks : DEFAULT_WEEKS, {
+    weeklyHours: plan ? plan.weeklyHours : undefined,
+    startAt: plan ? plan.startAt : undefined
+  });
   setPlan(next);
   return next;
+}
+
+function exportIcs(plan, entries, role) {
+  const events = Array.from({ length: plan.weeks }, (_, index) => {
+    const tasks = entries.filter(entry => entry.week === index);
+    if (!tasks.length) return null;
+    const start = plan.startAt + index * WEEK;
+    const hours = tasks.reduce((sum, entry) => sum + entry.hours, 0);
+    const description = [
+      `方向：${role.name}`,
+      `预计投入：${hours} 小时（每周约 ${plan.weeklyHours} 小时）`,
+      '任务：',
+      ...tasks.map(entry => `- ${entry.node.name}（${entry.hours} 小时）`)
+    ].join('\n');
+    return {
+      uid: `ksm-${plan.generatedAt}-w${index}@knowledge-star-map`,
+      start: new Date(start),
+      end: new Date(start + 7 * DAY),
+      summary: `知识星图 · 第 ${index + 1} 周：${role.name}`,
+      description
+    };
+  }).filter(Boolean);
+
+  if (!events.length) {
+    toast('当前计划没有可导出的任务', 'warn');
+    return;
+  }
+  const text = buildCalendar({
+    calendarName: `知识星图 · ${role.name} · ${plan.weeks} 周计划`,
+    events
+  });
+  const stamp = formatDate(Date.now()).replace(/\./g, '-');
+  downloadText(`知识星图-学习计划-${stamp}.ics`, text, 'text/calendar;charset=utf-8');
+  toast(`已导出 ${events.length} 周日历事件`, 'success');
 }
 
 function weekFocus(tasks) {
@@ -141,9 +189,10 @@ export function renderPlan(root, handlers = {}) {
   const totalHours = entries.reduce((sum, entry) => sum + entry.hours, 0);
   const pct = entries.length ? Math.round(doneCount / entries.length * 100) : 0;
   const now = Date.now();
-  const rawWeek = Math.floor((now - plan.generatedAt) / WEEK);
+  const upcoming = now < plan.startAt;
+  const rawWeek = Math.floor((now - plan.startAt) / WEEK);
   const currentWeek = Math.max(0, Math.min(plan.weeks - 1, rawWeek));
-  const expired = now >= plan.generatedAt + plan.weeks * WEEK;
+  const expired = now >= plan.startAt + plan.weeks * WEEK;
   const outside = Data.nodes.filter(node => !state.lit[node.id] && !plannedIds.has(node.id));
   const outsideReady = outside.filter(node => unlocked(node, state.lit));
   const allDone = doneCount === entries.length && entries.length > 0;
@@ -152,8 +201,8 @@ export function renderPlan(root, handlers = {}) {
     const tasks = entries.filter(entry => entry.week === index);
     const done = tasks.filter(entry => state.lit[entry.node.id]).length;
     const hours = tasks.reduce((sum, entry) => sum + entry.hours, 0);
-    const startAt = plan.generatedAt + index * WEEK;
-    const isCurrent = index === currentWeek && !expired;
+    const startAt = plan.startAt + index * WEEK;
+    const isCurrent = index === currentWeek && !expired && !upcoming;
     const complete = tasks.length > 0 && done === tasks.length;
     const focus = weekFocus(tasks);
     const tasksHtml = tasks.length
@@ -181,6 +230,8 @@ export function renderPlan(root, handlers = {}) {
 
   const horizonPills = HORIZONS.map(weeks => `
     <button class="dir-pill ${weeks === plan.weeks ? 'active' : ''}" data-action="horizon" data-id="${weeks}">${weeks} 周</button>`).join('');
+  const pacePills = PACE_OPTIONS.map(hours => `
+    <button class="dir-pill ${hours === plan.weeklyHours ? 'active' : ''}" data-action="pace" data-id="${hours}">${hours} 小时</button>`).join('');
 
   let bannerHtml = '';
   if (allDone) {
@@ -193,7 +244,7 @@ export function renderPlan(root, handlers = {}) {
   } else if (expired) {
     bannerHtml = `
       <div class="panel plan-hint">
-        <p>计划的 ${plan.weeks} 周周期已经结束${doneCount < entries.length ? '，还有任务没有完成' : ''}。重新规划会从当前进度继续排序。</p>
+        <p>计划的 ${plan.weeks} 周周期已经结束${doneCount < entries.length ? '，还有任务没有完成' : ''}。重新规划会从今天开始新周期，并按当前进度继续排序。</p>
         <button class="btn sm" data-action="replan">重新规划</button>
       </div>`;
   } else if (outsideReady.length) {
@@ -216,7 +267,7 @@ export function renderPlan(root, handlers = {}) {
       <div>
         <span class="eyebrow">学习计划</span>
         <h1>把目标拆成 ${plan.weeks} 周</h1>
-        <p>每周安排约 ${WEEK_HOURS} 小时的学习量，先补前置，再推主干。任务状态跟随挑战结果自动更新。</p>
+        <p>每周可投入 ${plan.weeklyHours} 小时，先补前置，再推主干。任务状态跟随挑战结果自动更新。</p>
       </div>
       <div class="plan-tools">
         <div class="dir-select" role="group" aria-label="计划周期">${horizonPills}</div>
@@ -228,8 +279,8 @@ export function renderPlan(root, handlers = {}) {
       <div class="hero-copy">
         <span class="eyebrow">当前计划</span>
         <h2>${escapeHtml(role.name)} · ${plan.weeks} 周学习计划</h2>
-        <p class="hero-tagline">自 ${formatDate(plan.generatedAt)} 起，每周约 ${WEEK_HOURS} 小时</p>
-        <p class="muted">${expired ? '计划周期已经结束，建议重新规划。' : '通过挑战后，对应任务会自动打勾。'}</p>
+        <p class="hero-tagline">${upcoming ? `将于 ${formatDate(plan.startAt)} 开始` : `自 ${formatDate(plan.startAt)} 起`} · 每周约 ${plan.weeklyHours} 小时</p>
+        <p class="muted">${expired ? '计划周期已经结束，建议重新规划。' : upcoming ? '计划尚未开始，可以先按第 1 周安排预习。' : '通过挑战后，对应任务会自动打勾。'}</p>
         <div class="progress-line">
           <div class="progress-track"><i style="width:${pct}%"></i></div>
           <span>${doneCount} / ${entries.length} 任务</span>
@@ -242,11 +293,24 @@ export function renderPlan(root, handlers = {}) {
       </div>
     </section>
 
+    <section class="panel plan-config" aria-label="计划设置">
+      <div class="config-group">
+        <span class="config-label">每周可投入</span>
+        <div class="dir-select" role="group" aria-label="每周可投入时长">${pacePills}</div>
+      </div>
+      <label class="config-group">
+        <span class="config-label">开始日期</span>
+        <input class="plan-date" id="plan-start" type="date" value="${inputDate(plan.startAt)}" aria-label="计划开始日期">
+      </label>
+      <button class="btn ghost sm plan-export" data-action="export">导出日历 · .ics</button>
+      <p class="config-hint">切换每周投入会按新节奏重排任务；修改开始日期只影响周次显示与导出的日程。</p>
+    </section>
+
     ${bannerHtml}
     ${emptyHtml}
     ${weekHtml}
 
-    <p class="page-foot">计划由本地规则生成：前置依赖 + 方向权重 + 每周约 ${WEEK_HOURS} 小时投入；点亮结果会自动同步。</p>`;
+    <p class="page-foot">计划由本地规则生成：前置依赖 + 方向权重 + 每周可投入 ${plan.weeklyHours} 小时；点亮结果会自动同步。</p>`;
 
   root.onclick = e => {
     const actionEl = e.target.closest('[data-action]');
@@ -256,11 +320,23 @@ export function renderPlan(root, handlers = {}) {
     if (action === 'horizon') {
       const weeks = Number(id);
       if (!HORIZONS.includes(weeks) || weeks === getState().plan?.weeks) return;
-      setPlan(createPlan(weeks));
+      setPlan(createPlan(weeks, { weeklyHours: plan.weeklyHours, startAt: plan.startAt }));
       renderPlan(root, handlers);
+    } else if (action === 'pace') {
+      const hours = Number(id);
+      if (!PACE_OPTIONS.includes(hours) || hours === plan.weeklyHours) return;
+      setPlan(createPlan(plan.weeks, { weeklyHours: hours, startAt: plan.startAt }));
+      renderPlan(root, handlers);
+      toast(`已按每周 ${hours} 小时重新排期`, 'success');
+    } else if (action === 'export') {
+      exportIcs(plan, entries, role);
     } else if (action === 'replan') {
-      const weeks = getState().plan ? getState().plan.weeks : DEFAULT_WEEKS;
-      setPlan(createPlan(weeks));
+      const current = getState().plan;
+      const weeks = current ? current.weeks : DEFAULT_WEEKS;
+      setPlan(createPlan(weeks, {
+        weeklyHours: current ? current.weeklyHours : DEFAULT_PACE,
+        startAt: Date.now()
+      }));
       renderPlan(root, handlers);
       if (handlers.onReplan) handlers.onReplan();
     } else if (action === 'challenge') {
@@ -269,4 +345,19 @@ export function renderPlan(root, handlers = {}) {
       if (handlers.onFocus) handlers.onFocus(id);
     }
   };
+
+  const startInput = root.querySelector('#plan-start');
+  if (startInput) {
+    startInput.addEventListener('change', () => {
+      const value = startInput.value;
+      if (!value) return;
+      const next = new Date(`${value}T00:00:00`);
+      if (Number.isNaN(next.getTime())) return;
+      const current = getState().plan;
+      if (!current) return;
+      setPlan({ ...current, startAt: next.getTime() });
+      renderPlan(root, handlers);
+      toast(`计划开始日期已设为 ${formatDate(next.getTime())}`, 'success');
+    });
+  }
 }
