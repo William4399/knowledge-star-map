@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>知识星图 · 星云版</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body {
+    background-color: #03060f;
+    background-image:
+      radial-gradient(ellipse at 50% 48%, rgba(3,6,15,0.50) 0%, rgba(3,6,15,0.78) 58%, rgba(2,4,10,0.95) 100%),
+      url('assets/bg-nebula.jpg');
+    background-size: cover, cover;
+    background-position: center center, center center;
+    background-repeat: no-repeat, no-repeat;
+    background-attachment: fixed, fixed;
+    font-family: -apple-system, "PingFang SC", system-ui, "Segoe UI", Roboto, sans-serif;
+    color: #e5e5e5;
+  }
+
+  #starfield {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0; pointer-events: none;
+  }
+
+  #graph-container {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+  }
+
+  .ui-layer {
+    position: absolute; z-index: 10; pointer-events: none;
+    width: 100%; height: 100%;
+  }
+  .ui-layer > * { pointer-events: auto; }
+
+  .top-bar {
+    position: absolute; top: 18px; left: 22px;
+    display: flex; align-items: baseline; gap: 14px;
+  }
+  .top-bar h1 {
+    font-size: 19px; font-weight: 500; letter-spacing: 2px;
+    color: #eaf2ff;
+    text-shadow: 0 0 18px rgba(140,190,255,0.45);
+  }
+  .top-bar .subtitle { font-size: 11px; color: #6b7a94; letter-spacing: 1px; }
+
+  .action-panel {
+    position: absolute; top: 18px; right: 22px;
+    display: flex; gap: 8px;
+  }
+  .btn {
+    background: rgba(120,160,220,0.06);
+    border: 1px solid rgba(150,185,235,0.18);
+    border-radius: 14px;
+    color: #b9c9e4; font-size: 12px; padding: 7px 14px;
+    cursor: pointer; transition: all .2s;
+    backdrop-filter: blur(6px);
+  }
+  .btn:hover { background: rgba(140,180,240,0.14); color: #eaf2ff; border-color: rgba(160,200,255,0.4); }
+  .btn.primary { color: #7dedb6; border-color: rgba(90,230,165,0.35); }
+  .btn.primary:hover { background: rgba(70,220,150,0.12); }
+
+  .detail-card {
+    position: absolute; top: 50%; right: 22px; transform: translateY(-50%);
+    width: 336px; max-height: 74vh; overflow-y: auto;
+    background: linear-gradient(180deg, rgba(12,18,32,0.95), rgba(8,12,22,0.95));
+    border: 1px solid rgba(140,175,230,0.16);
+    border-radius: 14px;
+    padding: 22px;
+    backdrop-filter: blur(18px);
+    display: none;
+    box-shadow: 0 14px 50px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  .detail-card.show { display: block; animation: slideIn .22s ease-out; }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-50%) translateX(16px); }
+    to { opacity: 1; transform: translateY(-50%) translateX(0); }
+  }
+  .detail-card .close-btn {
+    position: absolute; top: 12px; right: 14px;
+    background: none; border: none; color: #5d6a80; font-size: 17px;
+    cursor: pointer; line-height: 1;
+  }
+  .detail-card .close-btn:hover { color: #e5e5e5; }
+  .detail-card h2 { font-size: 17px; font-weight: 500; margin-bottom: 10px; padding-right: 20px; letter-spacing: .5px; }
+  .detail-card .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .detail-card .galaxy-tag, .detail-card .domain-tag {
+    display: inline-block; font-size: 11px; padding: 2px 9px;
+    border-radius: 10px; border: 1px solid currentColor; opacity: .85;
+  }
+  .detail-card p.desc { font-size: 13px; color: #a9b6cc; line-height: 1.7; margin-bottom: 16px; }
+  .detail-card .section-title {
+    font-size: 10px; color: #5f6c84; letter-spacing: 1.2px;
+    margin-bottom: 7px; display: flex; justify-content: space-between;
+  }
+  .detail-card .section-title em { font-style: normal; color: #8b98ad; letter-spacing: 0; }
+  .detail-card .bar { display: flex; gap: 3px; margin-bottom: 15px; }
+  .detail-card .bar span { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.07); }
+  .detail-card .bar span.filled { background: #6ce7a8; box-shadow: 0 0 8px rgba(108,231,168,0.5); }
+  .detail-card .bar.difficulty span.filled { background: #7fb4f5; box-shadow: 0 0 8px rgba(127,180,245,0.45); }
+  .detail-card .resources { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .detail-card .resources a {
+    font-size: 12px; color: #8fc3ff; text-decoration: none;
+    padding: 7px 11px; background: rgba(120,180,255,0.06);
+    border: 1px solid rgba(120,180,255,0.12); border-radius: 7px; display: block;
+  }
+  .detail-card .resources a:hover { background: rgba(120,180,255,0.14); }
+  .detail-card .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .detail-card .chips span {
+    font-size: 11px; padding: 3px 9px; border-radius: 10px;
+    background: rgba(255,255,255,0.05); color: #94a2b8;
+  }
+  .detail-card .chips span.done { background: rgba(80,230,160,0.12); color: #6ce7a8; }
+  .detail-card .btn-light {
+    width: 100%; padding: 11px; margin-top: 8px;
+    border: none; border-radius: 9px; font-size: 13px; cursor: pointer;
+    background: linear-gradient(135deg, #6ce7a8, #2fbf85);
+    color: #03271a; font-weight: 600; letter-spacing: .5px;
+    transition: transform .15s, box-shadow .15s;
+    box-shadow: 0 0 22px rgba(80,220,150,0.25);
+  }
+  .detail-card .btn-light:hover { transform: translateY(-1px); box-shadow: 0 0 30px rgba(80,220,150,0.4); }
+  .detail-card .btn-light:disabled { background: rgba(255,255,255,0.06); color: #5f6c84; cursor: not-allowed; transform: none; box-shadow: none; }
+  .detail-card .btn-challenge {
+    width: 100%; padding: 10px; margin-top: 8px;
+    border: 1px solid rgba(200,180,255,0.25); border-radius: 9px;
+    font-size: 12px; cursor: pointer; background: rgba(180,160,255,0.07);
+    color: #b9a8ff; transition: all .15s;
+  }
+  .detail-card .btn-challenge:hover { background: rgba(180,160,255,0.15); }
+  .detail-card .state-line { text-align: center; padding: 8px; font-size: 13px; color: #6ce7a8; }
+
+  .status-bar {
+    position: absolute; bottom: 18px; right: 22px;
+    font-size: 11px; color: #5f6c84; text-align: right; line-height: 1.8;
+    letter-spacing: .4px;
+  }
+  .status-bar b { color: #6ce7a8; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="graph-container"></div>
+
+<div class="ui-layer">
+
+  <div class="top-bar">
+    <h1>✦ 知识星图</h1>
+    <span class="subtitle">SOFTWARE ENGINEERING · CS2023</span>
+  </div>
+
+  <div class="action-panel">
+    <button class="btn" onclick="resetView()">重置视角</button>
+    <button class="btn primary" onclick="markAllStart()">标记起点</button>
+  </div>
+
+  <div class="detail-card" id="detail">
+    <button class="close-btn" onclick="closeDetail()">✕</button>
+    <div id="detail-content"></div>
+  </div>
+
+  <div class="status-bar" id="status"></div>
+</div>
+
+<script src="force-graph.min.js"></script>
+<script>
+// ============ 1. 数据 ============
+let starData = null;
+const state = {};
+let graph = null;
+let galaxyById = {};
+let hoveredNode = null;
+let initZoom = 0.85;
+const container = document.getElementById('graph-container');
+const TAU = Math.PI * 2;
+
+fetch('star-data.json')
+  .then(r => r.json())
+  .then(data => {
+    starData = data;
+    galaxyById = Object.fromEntries(data.galaxies.map(g => [g.id, g]));
+    data.nodes.forEach(n => {
+      state[n.id] = 'dark';
+      n.phase = Math.random() * TAU;
+      n.tSpeed = 0.5 + Math.random() * 1.3;
+    });
+    initGraph(data);
+    updateStatusBar();
+  })
+  .catch(err => {
+    console.error('加载失败:', err);
+    document.getElementById('status').textContent = '加载失败 — 请用 python -m http.server 打开';
+  });
+
+// ============ 2. 工具 ============
+function hexToRgba(hex, a) {
+  const h = hex.replace('#', '');
+  return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${a})`;
+}
+function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+function starRadius(node) { return 2.6 + node.importance * 1.7; }
+function nodeLabelAlpha(z)    { return clamp01((z - 1.05) / 0.5); }
+function galaxyLabelAlpha(z)  { return clamp01(1 - (z - 0.85) / 0.5); }
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const nowSec = () => reduceMotion ? 0 : performance.now() / 1000;
+
+// ============ 3. 背景星空 ============
+const starCanvas = document.getElementById('starfield');
+const sctx = starCanvas.getContext('2d');
+let bgStars = [];
+let nebulae = [];
+
+function buildStarfield() {
+  const w = window.innerWidth, h = window.innerHeight;
+  starCanvas.width = w; starCanvas.height = h;
+
+  const count = Math.round((w * h) / 7200);
+  bgStars = [];
+  for (let i = 0; i < count; i++) {
+    const bright = Math.random() < 0.04;
+    bgStars.push({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      r: bright ? 0.9 + Math.random() * 0.8 : 0.22 + Math.random() * 0.65,
+      base: bright ? 0.40 + Math.random() * 0.25 : 0.07 + Math.random() * 0.24,
+      phase: Math.random() * TAU,
+      speed: 0.3 + Math.random() * 1.2,
+      hue: Math.random() < 0.1 ? 'warm' : 'cool',
+      bright
+    });
+  }
+
+  nebulae = [];
+}
+
+function drawStarfield(t) {
+  const w = starCanvas.width, h = starCanvas.height;
+  sctx.clearRect(0, 0, w, h);
+
+  // 星云底
+  nebulae.forEach(n => {
+    const g = sctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+    g.addColorStop(0, `rgba(${n.color},${n.a})`);
+    g.addColorStop(0.5, `rgba(${n.color},${n.a * 0.5})`);
+    g.addColorStop(1, `rgba(${n.color},0)`);
+    sctx.fillStyle = g;
+    sctx.beginPath(); sctx.arc(n.x, n.y, n.r, 0, TAU); sctx.fill();
+  });
+
+  // 背景星点
+  const time = (t || 0) / 1000;
+  for (const s of bgStars) {
+    const tw = reduceMotion ? 1 : (0.6 + 0.4 * Math.sin(time * s.speed + s.phase));
+    const a = s.base * tw;
+    if (s.bright) { sctx.shadowColor = 'rgba(200,220,255,0.9)'; sctx.shadowBlur = 7; }
+    sctx.beginPath();
+    sctx.arc(s.x, s.y, s.r, 0, TAU);
+    sctx.fillStyle = s.hue === 'warm' ? `rgba(255,228,198,${a})` : `rgba(208,224,255,${a})`;
+    sctx.fill();
+    sctx.shadowBlur = 0;
+  }
+  requestAnimationFrame(drawStarfield);
+}
+
+buildStarfield();
+requestAnimationFrame(drawStarfield);
+
+// ============ 4. 星图初始化 ============
+function initGraph(data) {
+  if (typeof ForceGraph === 'undefined') { alert('ForceGraph 库未加载'); return; }
+
+  const nodes = data.nodes.map(n => {
+    const g = galaxyById[n.galaxy];
+    const a = Math.random() * TAU;
+    const d = 16 + Math.random() * 52;
+    return { ...n, x: (g ? g.ax : 0) + Math.cos(a) * d, y: (g ? g.ay : 0) + Math.sin(a) * d };
+  });
+
+  graph = ForceGraph()(container)
+    .graphData({
+      nodes,
+      links: data.edges.map((e, i) => ({
+        source: e.from, target: e.to, type: e.type, weight: e.weight,
+        seed: (i * 137.5) % 180,
+        speed: 0.6 + Math.random() * 1.1
+      }))
+    })
+    .nodeId('id')
+    .nodeVal(n => n.importance)
+    .linkColor(() => 'transparent')
+    .onNodeClick(openDetail)
+    .onNodeHover(n => {
+      hoveredNode = n || null;
+      container.style.cursor = n ? 'pointer' : 'grab';
+    })
+    .backgroundColor('transparent');
+
+  graph.d3Force('link').distance(l => l.type === 'prerequisite' ? 72 : 108);
+  graph.d3Force('charge').strength(-185);
+
+  // 弱星系引力：同类自然靠拢，但不强行定位
+  graph.d3Force('cluster', (alpha) => {
+    graph.graphData().nodes.forEach(n => {
+      const g = galaxyById[n.galaxy];
+      if (!g || n.x == null) return;
+      n.vx += (g.ax - n.x) * alpha * 0.075;
+      n.vy += (g.ay - n.y) * alpha * 0.075;
+    });
+  });
+
+  graph.linkCanvasObject(drawLink);
+  graph.nodeCanvasObject(drawStarNode);
+  graph.onRenderFramePre(drawNebulae);
+
+  graph.width(container.clientWidth);
+  graph.height(container.clientHeight);
+
+  // 缩放极限：刚好能看全所有星星，放大到 3.2 倍
+  const EXTENT = 780;
+  const fit = Math.min(container.clientWidth / (2 * EXTENT), container.clientHeight / (2 * EXTENT));
+  const minZ = Math.max(0.35, fit * 0.98);
+  initZoom = Math.min(0.95, Math.max(minZ * 1.1, 0.62));
+  graph.minZoom(minZ).maxZoom(3.2);
+
+  graph.centerAt(0, 0, 0);
+  graph.zoom(initZoom, 0);
+
+  window.addEventListener('resize', () => {
+    buildStarfield();
+    if (!graph) return;
+    graph.width(container.clientWidth);
+    graph.height(container.clientHeight);
+  });
+}
+
+// ============ 5. 星云（替代虚线圆圈） ============
+function drawNebulae(ctx, globalScale) {
+  if (!graph) return;
+  const groups = {};
+  graph.graphData().nodes.forEach(n => {
+    if (n.x == null || !n.galaxy) return;
+    (groups[n.galaxy] = groups[n.galaxy] || []).push(n);
+  });
+
+  const labelAlpha = galaxyLabelAlpha(globalScale);
+  ctx.globalCompositeOperation = 'lighter';
+
+  Object.keys(groups).forEach(gid => {
+    const g = galaxyById[gid];
+    if (!g) return;
+    const ns = groups[gid];
+
+    let cx = 0, cy = 0;
+    ns.forEach(n => { cx += n.x; cy += n.y; });
+    cx /= ns.length; cy /= ns.length;
+
+    let spread = 0;
+    ns.forEach(n => { spread = Math.max(spread, Math.hypot(n.x - cx, n.y - cy)); });
+    const R = Math.min(spread + 105, 230);
+
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+    grad.addColorStop(0, hexToRgba(g.color, 0.085));
+    grad.addColorStop(0.45, hexToRgba(g.color, 0.045));
+    grad.addColorStop(1, hexToRgba(g.color, 0));
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
+  });
+
+  ctx.globalCompositeOperation = 'source-over';
+
+  // 星系名（缩小时显现，无边框）
+  if (labelAlpha > 0.02) {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    Object.keys(groups).forEach(gid => {
+      const g = galaxyById[gid];
+      if (!g) return;
+      const ns = groups[gid];
+      let cx = 0, cy = 0, spread = 0;
+      ns.forEach(n => { cx += n.x; cy += n.y; });
+      cx /= ns.length; cy /= ns.length;
+      ns.forEach(n => { spread = Math.max(spread, Math.hypot(n.x - cx, n.y - cy)); });
+      const R = Math.min(spread + 105, 230);
+
+      ctx.globalAlpha = labelAlpha * 0.75;
+      ctx.font = `${11.5 / globalScale}px -apple-system, "PingFang SC", sans-serif`;
+      ctx.fillStyle = hexToRgba(g.color, 0.9);
+      ctx.fillText(g.name, cx, cy - R * 0.72);
+      ctx.globalAlpha = 1;
+    });
+  }
+}
+
+// ============ 6. 星星（弧光 + 微闪） ============
+function drawStarNode(node, ctx, globalScale) {
+  const r = starRadius(node);
+  const g = galaxyById[node.galaxy];
+  const galaxyColor = g ? g.color : '#9dc7ff';
+  const lit = state[node.id] === 'lit';
+  const glowColor = galaxyColor;   // 颜色始终属于星系，只有明暗随状态变化
+
+  const t = nowSec();
+  const twinkle = reduceMotion ? 0.92 : (0.74 + 0.26 * Math.sin(t * node.tSpeed + node.phase));
+  const hovered = hoveredNode && hoveredNode.id === node.id;
+  const intensity = twinkle * (lit ? 1.15 : 0.42) * (hovered ? 1.7 : 1);
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+
+  // 大范围柔光
+  const glowR = r * (hovered ? 7 : 5.6);
+  const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowR);
+  glow.addColorStop(0, hexToRgba(glowColor, 0.62 * intensity));
+  glow.addColorStop(0.22, hexToRgba(glowColor, 0.24 * intensity));
+  glow.addColorStop(0.55, hexToRgba(glowColor, 0.07 * intensity));
+  glow.addColorStop(1, hexToRgba(glowColor, 0));
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(node.x, node.y, glowR, 0, TAU); ctx.fill();
+
+  // 弧光：两道拉长的光弧
+  drawFlare(ctx, node.x, node.y, r * 7.5, 0, glowColor, 0.5 * intensity);
+  drawFlare(ctx, node.x, node.y, r * 6.2, Math.PI / 2, glowColor, 0.3 * intensity);
+
+  // 星核
+  ctx.beginPath();
+  ctx.arc(node.x, node.y, r * 1.25, 0, TAU);
+  ctx.fillStyle = hexToRgba(glowColor, 0.55 * intensity);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(node.x, node.y, r * 0.6, 0, TAU);
+  ctx.fillStyle = `rgba(255,255,255,${(lit ? 0.92 : 0.5) * (0.8 + 0.2 * twinkle)})`;
+  ctx.fill();
+
+  // 已点亮：一圈淡色星环
+  if (lit) {
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, r * 1.95, 0, TAU);
+    ctx.strokeStyle = hexToRgba(galaxyColor, 0.4 * intensity);
+    ctx.lineWidth = 0.75 / globalScale;
+    ctx.stroke();
+  }
+
+  // 悬停光圈
+  if (hovered) {
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, r * 2.4, 0, TAU);
+    ctx.strokeStyle = hexToRgba(glowColor, 0.5);
+    ctx.lineWidth = 0.9 / globalScale;
+    ctx.stroke();
+  }
+
+  ctx.globalCompositeOperation = 'source-over';
+
+  // 名称：放大时显现
+  const labelAlpha = nodeLabelAlpha(globalScale);
+  if (labelAlpha > 0.02) {
+    ctx.globalAlpha = labelAlpha;
+    ctx.font = `${(10 + node.importance * 0.8) / globalScale}px -apple-system, "PingFang SC", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.shadowColor = 'rgba(0,0,0,0.85)';
+    ctx.shadowBlur = 4 / globalScale;
+    ctx.fillStyle = lit ? 'rgba(242,250,255,0.95)' : 'rgba(186,200,222,0.7)';
+    ctx.fillText(node.name, node.x, node.y + r * 1.9 + 3 / globalScale);
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+  }
+
+  // 悬停点击提示
+  if (hovered) {
+    ctx.font = `${10.5 / globalScale}px -apple-system, "PingFang SC", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = 'rgba(160,205,255,0.85)';
+    ctx.fillText('点击查看 · ' + node.name, node.x, node.y - r * 3.4 - 10 / globalScale);
+  }
+
+  ctx.restore();
+}
+
+function drawFlare(ctx, x, y, len, angle, color, alpha) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.scale(1, 0.11);
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, len);
+  g.addColorStop(0, hexToRgba(color, alpha));
+  g.addColorStop(0.3, hexToRgba(color, alpha * 0.45));
+  g.addColorStop(1, hexToRgba(color, 0));
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(0, 0, len, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
+// ============ 7. 星线（细线 + 光流） ============
+function drawLink(link, ctx, globalScale) {
+  const s = link.source, t = link.target;
+  if (!s || !t || s.x == null || t.x == null) return;
+
+  const tg = galaxyById[t.galaxy];
+  const color = tg ? tg.color : '#9dc7ff';
+  const isPrereq = link.type === 'prerequisite';
+  const baseAlpha = isPrereq ? 0.10 : 0.055;
+  const flowAlpha = isPrereq ? 0.42 : 0.24;
+
+  ctx.beginPath();
+  ctx.moveTo(s.x, s.y);
+  ctx.lineTo(t.x, t.y);
+  ctx.strokeStyle = hexToRgba(color, baseAlpha);
+  ctx.lineWidth = (isPrereq ? 0.85 : 0.6) / globalScale;
+  ctx.stroke();
+
+  if (reduceMotion) return;
+
+  const len = Math.hypot(t.x - s.x, t.y - s.y);
+  if (len < 1) return;
+  const dash = Math.min(16, len * 0.14);
+  const gap = Math.max(70, len * 0.85);
+  const period = dash + gap;
+  const off = (performance.now() * 0.05 + link.seed) % period;
+
+  ctx.beginPath();
+  ctx.moveTo(s.x, s.y);
+  ctx.lineTo(t.x, t.y);
+  ctx.setLineDash([dash, gap]);
+  ctx.lineDashOffset = -off;
+  ctx.strokeStyle = hexToRgba(color, flowAlpha);
+  ctx.lineWidth = (isPrereq ? 1.0 : 0.75) / globalScale;
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 沿线流动的亮光
+  const p = ((performance.now() * 0.0001 * link.speed + link.seed / 200) % 1);
+  const px = s.x + (t.x - s.x) * p;
+  const py = s.y + (t.y - s.y) * p;
+  const dotR = isPrereq ? 3.6 : 2.6;
+  const dg = ctx.createRadialGradient(px, py, 0, px, py, dotR);
+  dg.addColorStop(0, hexToRgba(color, isPrereq ? 0.9 : 0.55));
+  dg.addColorStop(0.35, hexToRgba(color, isPrereq ? 0.32 : 0.18));
+  dg.addColorStop(1, hexToRgba(color, 0));
+  ctx.fillStyle = dg;
+  ctx.beginPath(); ctx.arc(px, py, dotR, 0, TAU); ctx.fill();
+}
+
+// ============ 8. 详情卡 ============
+function incomingPrereqs(id) {
+  return starData.edges.filter(e => e.to === id && e.type === 'prerequisite').map(e => e.from);
+}
+function nodeById(id) { return starData.nodes.find(n => n.id === id); }
+function canStart(node) {
+  const pre = incomingPrereqs(node.id);
+  const anyOf = node.any_of || [];
+  return pre.every(id => state[id] === 'lit') &&
+         (anyOf.length === 0 || anyOf.some(id => state[id] === 'lit'));
+}
+
+function openDetail(node) {
+  const g = galaxyById[node.galaxy];
+  const prereqIds = incomingPrereqs(node.id);
+  const anyOf = node.any_of || [];
+  const nodeState = state[node.id];
+  const ready = canStart(node);
+
+  const chipsOf = ids => ids.map(id => {
+    const n = nodeById(id);
+    return `<span class="${state[id] === 'lit' ? 'done' : ''}">${n ? n.name : id}</span>`;
+  }).join('');
+
+  let prereqHtml = '';
+  if (prereqIds.length) prereqHtml += `<div class="section-title">前置依赖</div><div class="chips">${chipsOf(prereqIds)}</div>`;
+  if (anyOf.length) prereqHtml += `<div class="section-title">任一即可</div><div class="chips">${chipsOf(anyOf)}</div>`;
+  if (!prereqIds.length && !anyOf.length) {
+    prereqHtml = `<div class="section-title">前置依赖</div><div class="chips"><span class="done">★ 起点星</span></div>`;
+  }
+
+  const resourcesHtml = (node.resources && node.resources.length)
+    ? node.resources.map(r => `<a href="${r.url}" target="_blank">✦ ${r.title}</a>`).join('')
+    : '<div style="color:#4e5a70;font-size:12px;margin-bottom:14px">暂未收录学习资源</div>';
+
+  let actionHtml = '';
+  if (nodeState === 'lit') {
+    actionHtml = `<div class="state-line">✦ 已点亮</div>
+                  <button class="btn-challenge" onclick="resetNode('${node.id}')">撤销点亮</button>`;
+  } else if (ready) {
+    actionHtml = `<button class="btn-light" onclick="challengeNode('${node.id}')">发起挑战（Demo：直接点亮）</button>`;
+  } else {
+    const missing = prereqIds.filter(id => state[id] !== 'lit').map(id => nodeById(id)?.name || id);
+    const tip = missing.length
+      ? `尚未点亮：${missing.join('、')}`
+      : `需先掌握任一门：${anyOf.map(id => nodeById(id)?.name || id).join(' / ')}`;
+    actionHtml = `<button class="btn-light" disabled>✦ ${tip}</button>`;
+  }
+
+  document.getElementById('detail-content').innerHTML = `
+    <h2>${node.name}</h2>
+    <div class="tags">
+      <span class="galaxy-tag" style="color:${g ? g.color : '#9dc7ff'}">${g ? g.name : '未分类'}${g && g.ka ? ' · ' + g.ka : ''}</span>
+      ${node.core ? '<span class="domain-tag" style="color:#6ce7a8">核心</span>' : ''}
+    </div>
+    <div class="section-title">重要度 <em>${node.importance} / 5</em></div>
+    <div class="bar">${Array(node.importance).fill('<span class="filled"></span>').join('')}${Array(5 - node.importance).fill('<span></span>').join('')}</div>
+    <div class="section-title">学习难度 <em>${node.complexity} / 5</em></div>
+    <div class="bar difficulty">${Array(node.complexity).fill('<span class="filled"></span>').join('')}${Array(5 - node.complexity).fill('<span></span>').join('')}</div>
+    <p class="desc">${node.description}</p>
+    ${prereqHtml}
+    <div class="section-title">学习资源</div>
+    <div class="resources">${resourcesHtml}</div>
+    ${actionHtml}
+  `;
+  document.getElementById('detail').classList.add('show');
+}
+
+function closeDetail() { document.getElementById('detail').classList.remove('show'); }
+
+// ============ 9. 状态 ============
+function challengeNode(id) {
+  if (state[id] === 'lit') return;
+  state[id] = 'lit';
+  const node = nodeById(id);
+  if (node) openDetail(node);
+  updateStatusBar();
+}
+function resetNode(id) {
+  state[id] = 'dark';
+  const node = nodeById(id);
+  if (node) openDetail(node);
+  updateStatusBar();
+}
+function markAllStart() {
+  starData.nodes.forEach(n => {
+    const noPre = incomingPrereqs(n.id).length === 0;
+    const noAny = (n.any_of || []).length === 0;
+    state[n.id] = (noPre && noAny) ? 'lit' : 'dark';
+  });
+  updateStatusBar();
+  closeDetail();
+}
+function updateStatusBar() {
+  if (!starData) return;
+  const total = starData.nodes.length;
+  const lit = Object.values(state).filter(s => s === 'lit').length;
+  document.getElementById('status').innerHTML =
+    `已点亮 <b>${lit}</b> / ${total}<br>滚轮缩放 · 拖动画布 · 点击星星`;
+}
+function resetView() {
+  if (graph) { graph.centerAt(0, 0, 600); graph.zoom(initZoom, 600); }
+  closeDetail();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+</script>
+</body>
+</html>
