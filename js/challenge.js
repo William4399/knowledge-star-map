@@ -220,8 +220,23 @@ export function openChallenge(nodeId, options = {}) {
 
     const state = getState();
     const alreadyLit = !!state.lit[node.id];
-    if (passed) passChallenge(node.id, total);
-    else failChallenge(node.id, total);
+    const wrong = [];
+    const rightIds = [];
+    details.forEach(d => {
+      if (d.ok) {
+        rightIds.push(d.q.id);
+      } else {
+        wrong.push({
+          qid: d.q.id,
+          type: d.q.type,
+          chosen: d.q.type === 'choice' ? Number(d.ans) : null,
+          missing: d.missing
+        });
+      }
+    });
+    const mistakeData = { wrong, rightIds };
+    if (passed) passChallenge(node.id, total, mistakeData);
+    else failChallenge(node.id, total, mistakeData);
 
     local.phase = 'result';
     local.result = { details, total, passed, allShortOk, alreadyLit };
@@ -263,6 +278,9 @@ export function openChallenge(nodeId, options = {}) {
     const shortNote = !allShortOk && total >= threshold
       ? '<p class="challenge-note warn">总分过线，但有简答题未达到关键词要求，因此本次不算通过。</p>'
       : '';
+    const mistakeNote = !passed
+      ? '<p class="challenge-note">答错的题目已记入「我的 → 待复习」，下次可以直接重练这颗星。</p>'
+      : '';
 
     body.innerHTML = `
       <div class="result-hero ${passed ? 'pass' : 'fail'}">
@@ -275,6 +293,7 @@ export function openChallenge(nodeId, options = {}) {
           : `距离及格线还差 ${Math.max(0, threshold - total)} 分。看完解析再试一次，通常就能过。`}</p>
       </div>
       ${shortNote}
+      ${mistakeNote}
       <div class="review-list">${review}</div>`;
     setActions(`
         <button class="btn ghost" data-act="done">${passed ? '回到星图' : '稍后再来'}</button>

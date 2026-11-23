@@ -1,4 +1,4 @@
-import { Data, galaxyMastery } from './data.js';
+import { Data, galaxyMastery, nodeById, galaxyOf, questionsFor } from './data.js';
 import { getState, exportText, importText, resetAll, resetOnboarding } from './store.js';
 import {
   TAU, escapeHtml, formatDate, toast, confirmDialog, downloadText
@@ -191,6 +191,47 @@ export function renderProfile(root, handlers = {}) {
     .sort((a, b) => b.pct - a.pct)
     .slice(0, 3);
 
+  const mistakeItems = Object.entries(state.mistakes || {})
+    .map(([qid, m]) => {
+      const node = nodeById(m.node);
+      if (!node) return null;
+      const q = questionsFor(node.id).find(item => item.id === qid);
+      if (!q) return null;
+      return { qid, m, node, q, g: galaxyOf(node) };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.m.at - a.m.at);
+
+  const mistakeHtml = mistakeItems.length ? mistakeItems.map(item => {
+    const color = item.g ? item.g.color : '#9dc7ff';
+    const q = item.q;
+    const detail = q.type === 'choice'
+      ? (item.m.chosen == null || !q.options[item.m.chosen]
+        ? '未作答'
+        : `你的选择：${String.fromCharCode(65 + item.m.chosen)}. ${escapeHtml(q.options[item.m.chosen])}`)
+      : (item.m.missing.length
+        ? `缺少关键词：${item.m.missing.map(escapeHtml).join('、')}`
+        : '未达到关键词要求');
+    return `
+      <article class="mistake-row">
+        <span class="target-dot" style="background:${color};box-shadow:0 0 9px ${color}"></span>
+        <div class="mistake-main">
+          <div class="mistake-title">
+            <b>${escapeHtml(item.node.name)}</b>
+            <span class="tag" style="color:${color};border-color:${color}55">${escapeHtml(item.g ? item.g.name : '未分类')}</span>
+            <span class="mistake-type ${q.type}">${q.type === 'choice' ? '选择题答错' : '简答未达标'}</span>
+          </div>
+          <p class="mistake-stem">${escapeHtml(q.stem)}</p>
+          <p class="mistake-meta">${detail} · 错过 ${item.m.count} 次 · ${formatDate(item.m.at)}</p>
+        </div>
+        <button class="btn ghost sm" data-action="review" data-id="${item.node.id}">重练</button>
+      </article>`;
+  }).join('')
+    : `<div class="empty compact">
+        <p>暂无待复习的错题。</p>
+        <p class="muted">挑战未通过时，答错的题目会自动记录在这里；通过后自动清除。</p>
+      </div>`;
+
   const onboarding = state.onboarding;
   const onboardingLine = onboarding.done
     ? `${escapeHtml(onboarding.major || '未填写专业')} · ${escapeHtml(onboarding.grade || '未填写年级')} · 摸底 ${onboarding.quiz.correct}/${onboarding.quiz.total}`
@@ -257,6 +298,12 @@ export function renderProfile(root, handlers = {}) {
     </section>
 
     <section class="panel">
+      <div class="panel-head"><h2>待复习</h2><span class="count">${mistakeItems.length}</span></div>
+      <p class="panel-sub">最近一次挑战中答错的题目会留在这里；重新通过该知识点的挑战后自动清除。</p>
+      <div class="mistake-list">${mistakeHtml}</div>
+    </section>
+
+    <section class="panel">
       <div class="panel-head"><h2>能力评价</h2><span class="count">自动生成</span></div>
       <p class="advice">${escapeHtml(buildAdvice(lit, mastery))}</p>
       <div class="galaxy-bars">
@@ -304,6 +351,8 @@ export function renderProfile(root, handlers = {}) {
     const action = actionEl.dataset.action;
     if (action === 'direction') {
       if (handlers.onDirection) handlers.onDirection(actionEl.dataset.id);
+    } else if (action === 'review') {
+      if (handlers.onReview) handlers.onReview(actionEl.dataset.id);
     } else if (action === 'export') {
       const stamp = new Date().toISOString().slice(0, 10);
       downloadText(`知识星图-存档-${stamp}.json`, exportText());

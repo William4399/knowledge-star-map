@@ -21,8 +21,27 @@ function blank() {
     },
     settings: { highlight: true },
     counters: { attempts: 0, answered: 0, correct: 0 },
-    plan: null
+    plan: null,
+    mistakes: {}
   };
+}
+
+function sanitizeMistakes(raw) {
+  if (!raw || typeof raw !== 'object') return {};
+  const out = {};
+  Object.keys(raw).slice(0, 200).forEach(qid => {
+    const v = raw[qid];
+    if (!v || typeof v !== 'object' || typeof v.node !== 'string') return;
+    out[qid] = {
+      node: v.node,
+      type: v.type === 'short' ? 'short' : 'choice',
+      chosen: Number.isFinite(Number(v.chosen)) ? Number(v.chosen) : null,
+      missing: Array.isArray(v.missing) ? v.missing.filter(x => typeof x === 'string').slice(0, 10) : [],
+      at: Number(v.at) || Date.now(),
+      count: Math.max(1, Number(v.count) || 1)
+    };
+  });
+  return out;
 }
 
 function sanitizePlan(raw) {
@@ -95,6 +114,7 @@ function sanitize(raw) {
     };
   }
   base.plan = sanitizePlan(raw.plan);
+  base.mistakes = sanitizeMistakes(raw.mistakes);
   return base;
 }
 
@@ -149,6 +169,30 @@ export function litSet() {
   return state.lit;
 }
 
+function clearNodeMistakes(nodeId) {
+  Object.keys(state.mistakes).forEach(qid => {
+    if (state.mistakes[qid].node === nodeId) delete state.mistakes[qid];
+  });
+}
+
+function applyMistakeData(nodeId, data) {
+  if (!data) return;
+  const { wrong = [], rightIds = [] } = data;
+  rightIds.forEach(qid => { delete state.mistakes[qid]; });
+  wrong.forEach(item => {
+    if (!item || !item.qid) return;
+    const prev = state.mistakes[item.qid];
+    state.mistakes[item.qid] = {
+      node: nodeId,
+      type: item.type === 'short' ? 'short' : 'choice',
+      chosen: Number.isFinite(Number(item.chosen)) ? Number(item.chosen) : null,
+      missing: Array.isArray(item.missing) ? item.missing.slice(0, 10) : [],
+      at: Date.now(),
+      count: (prev && prev.count ? prev.count : 0) + 1
+    };
+  });
+}
+
 export function lightNode(id, score = 100, source = 'challenge') {
   if (!state.lit[id]) {
     state.lit[id] = { at: Date.now(), score, source };
@@ -156,6 +200,7 @@ export function lightNode(id, score = 100, source = 'challenge') {
     state.lit[id].score = Math.max(state.lit[id].score || 0, score);
   }
   delete state.claimed[id];
+  clearNodeMistakes(id);
   emit('lit', { id, score, source });
 }
 
@@ -166,7 +211,7 @@ export function unlightNode(id) {
   return true;
 }
 
-export function passChallenge(id, score) {
+export function passChallenge(id, score, mistakeData) {
   const rec = state.records[id] || { attempts: 0, best: 0 };
   rec.attempts += 1;
   rec.best = Math.max(rec.best || 0, score);
@@ -184,10 +229,11 @@ export function passChallenge(id, score) {
     source: 'challenge'
   };
   delete state.claimed[id];
+  clearNodeMistakes(id);
   emit('challenge-pass', { id, score, firstTime: !wasLit });
 }
 
-export function failChallenge(id, score) {
+export function failChallenge(id, score, mistakeData) {
   const rec = state.records[id] || { attempts: 0, best: 0 };
   rec.attempts += 1;
   rec.best = Math.max(rec.best || 0, score);
@@ -195,6 +241,7 @@ export function failChallenge(id, score) {
   rec.lastAt = Date.now();
   state.records[id] = rec;
   state.counters.attempts += 1;
+  applyMistakeData(id, mistakeData);
   emit('challenge-fail', { id, score });
 }
 

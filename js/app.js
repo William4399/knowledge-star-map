@@ -350,6 +350,12 @@ function renderProfileView() {
       setView('path');
     },
     onOnboarding: () => openOnboardingFlow(),
+    onReview: id => openChallenge(id, {
+      onChange: () => {
+        updateAll();
+        if (currentView === 'profile') renderProfileView();
+      }
+    }),
     onReset: () => {
       updateAll();
       setView('graph');
