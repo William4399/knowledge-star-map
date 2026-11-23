@@ -191,6 +191,63 @@ export function renderProfile(root, handlers = {}) {
     .sort((a, b) => b.pct - a.pct)
     .slice(0, 3);
 
+  /* 学习轨迹：由首次点亮时间还原每日活跃度 */
+  const DAY = 86400000;
+  const litEntries = Object.entries(lit)
+    .map(([id, v]) => ({
+      node: nodeById(id),
+      at: Number(v && v.at) || 0,
+      score: Number(v && v.score) || 0
+    }))
+    .filter(item => item.node && item.at > 0)
+    .sort((a, b) => b.at - a.at);
+
+  const dayCount = {};
+  litEntries.forEach(item => {
+    const d = new Date(item.at);
+    d.setHours(0, 0, 0, 0);
+    dayCount[d.getTime()] = (dayCount[d.getTime()] || 0) + 1;
+  });
+  const dayKeys = Object.keys(dayCount).map(Number).sort((a, b) => a - b);
+  const activeDays = dayKeys.length;
+  let bestStreak = 0;
+  let run = 0;
+  dayKeys.forEach((ts, index) => {
+    run = index > 0 && ts - dayKeys[index - 1] === DAY ? run + 1 : 1;
+    if (run > bestStreak) bestStreak = run;
+  });
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dow = (today.getDay() + 6) % 7;
+  const heatStart = today.getTime() - dow * DAY - 11 * 7 * DAY;
+  const recent7 = litEntries.filter(item => item.at >= today.getTime() - 6 * DAY).length;
+  const heatCells = Array.from({ length: 84 }, (_, index) => {
+    const ts = heatStart + index * DAY;
+    const d = new Date(ts);
+    const count = dayCount[ts] || 0;
+    const level = count === 0 ? 0 : Math.min(4, count);
+    const future = ts > today.getTime();
+    const label = `${d.getMonth() + 1}.${d.getDate()} · ${future ? '未到' : count ? `${count} 颗星` : '未学习'}`;
+    return `<i class="h${level}${future ? ' future' : ''}" title="${label}" aria-label="${label}"></i>`;
+  }).join('');
+
+  const traceHtml = litEntries.slice(0, 6).map(item => {
+    const g = galaxyOf(item.node);
+    const color = g ? g.color : '#9dc7ff';
+    return `
+      <article class="trace-row">
+        <span class="target-dot" style="background:${color};box-shadow:0 0 9px ${color}"></span>
+        <div class="trace-main">
+          <div class="trace-title">
+            <b>${escapeHtml(item.node.name)}</b>
+            <span class="tag" style="color:${color};border-color:${color}55">${escapeHtml(g ? g.name : '未分类')}</span>
+          </div>
+          <p class="trace-meta">${formatDate(item.at)} · 最好 ${item.score} 分</p>
+        </div>
+      </article>`;
+  }).join('');
+
   const mistakeItems = Object.entries(state.mistakes || {})
     .map(([qid, m]) => {
       const node = nodeById(m.node);
@@ -296,6 +353,34 @@ export function renderProfile(root, handlers = {}) {
         <canvas id="radar-canvas" aria-label="十一个知识星系的掌握度雷达图"></canvas>
         <p class="radar-note">按重要度加权的星系掌握度</p>
       </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>学习轨迹</h2><span class="count">近 12 周</span></div>
+      <p class="panel-sub">每格代表一天，颜色越亮表示当天点亮的星星越多；数据来自本地存档中的首次点亮时间。</p>
+      ${litEntries.length ? `
+      <div class="trace-stats">
+        <div class="trace-stat"><b>${activeDays}</b><span>活跃天数</span></div>
+        <div class="trace-stat"><b>${bestStreak}</b><span>最长连续</span></div>
+        <div class="trace-stat"><b>${recent7}</b><span>最近 7 天点亮</span></div>
+      </div>
+      <div class="trace-body">
+        <div class="trace-heat">
+          <div class="heatmap" role="img" aria-label="近 12 周每日点亮热力图，共 ${activeDays} 个活跃日">${heatCells}</div>
+          <div class="heat-legend">
+            <span>少</span><i class="h0"></i><i class="h1"></i><i class="h2"></i><i class="h3"></i><i class="h4"></i><span>多</span>
+            <em>每列一周，从周一开始</em>
+          </div>
+        </div>
+        <div class="trace-recent">
+          <h3 class="trace-sub">最近点亮</h3>
+          <div class="trace-list">${traceHtml}</div>
+        </div>
+      </div>` : `
+      <div class="empty compact">
+        <p>还没有点亮记录。</p>
+        <p class="muted">完成第一次挑战后，这里会出现你的学习轨迹与连续天数。</p>
+      </div>`}
     </section>
 
     <section class="panel">

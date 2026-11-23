@@ -684,6 +684,57 @@ body[data-view="profile"] .topbar {
 .plan-hint p { font-size: 12px; color: #9fb4d0; line-height: 1.7; }
 .plan-hint .btn { flex: none; }
 
+/* ============ 学习轨迹 ============ */
+.trace-stats { display: flex; gap: 32px; flex-wrap: wrap; margin: 2px 0 16px; }
+.trace-stat b {
+  display: block;
+  font-size: 22px; font-weight: 500; color: #eaf2ff;
+  letter-spacing: 0.5px; font-variant-numeric: tabular-nums;
+}
+.trace-stat span { font-size: 10.5px; color: #6b7a94; letter-spacing: 0.5px; }
+.trace-body { display: grid; grid-template-columns: auto 1fr; gap: 30px; align-items: start; }
+.trace-heat { min-width: 0; }
+.heatmap {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, 16px);
+  grid-auto-columns: 16px;
+  gap: 5px;
+  overflow-x: auto;
+  padding: 2px 0 8px;
+  scrollbar-width: thin;
+}
+.heatmap i { display: block; width: 16px; height: 16px; border-radius: 4px; }
+.heatmap i, .heat-legend i.h0 { background: rgba(140, 180, 240, 0.07); }
+.heatmap i.h1, .heat-legend i.h1 { background: rgba(108, 231, 168, 0.24); }
+.heatmap i.h2, .heat-legend i.h2 { background: rgba(108, 231, 168, 0.45); }
+.heatmap i.h3, .heat-legend i.h3 { background: rgba(108, 231, 168, 0.68); box-shadow: 0 0 6px rgba(108, 231, 168, 0.18); }
+.heatmap i.h4, .heat-legend i.h4 { background: rgba(108, 231, 168, 0.9); box-shadow: 0 0 8px rgba(108, 231, 168, 0.3); }
+.heatmap i.future { background: transparent; border: 1px dashed rgba(150, 185, 235, 0.1); }
+.heat-legend {
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+  margin-top: 6px; font-size: 10px; color: #5f6c84;
+}
+.heat-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.heat-legend em { flex-basis: 100%; margin-left: 0; margin-top: 2px; font-style: normal; color: #4e5a70; }
+.trace-recent { border-left: 1px solid rgba(150, 185, 235, 0.08); padding-left: 26px; min-width: 0; }
+.trace-sub {
+  font-size: 10.5px; font-weight: 400; letter-spacing: 1px;
+  color: #6b7a94; margin-bottom: 4px;
+}
+.trace-list { display: flex; flex-direction: column; }
+.trace-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(150, 185, 235, 0.06);
+}
+.trace-row:first-child { padding-top: 2px; }
+.trace-row:last-child { border-bottom: 0; padding-bottom: 2px; }
+.trace-main { flex: 1; min-width: 0; }
+.trace-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 3px; }
+.trace-title b { font-size: 12.5px; font-weight: 500; color: #d8e4f5; }
+.trace-meta { font-size: 10.5px; color: #66748a; }
+
 /* ============ 错题复习 ============ */
 .mistake-list { display: flex; flex-direction: column; }
 .mistake-row {
@@ -1321,6 +1372,9 @@ body[data-view="profile"] .topbar {
   .task { align-items: flex-start; gap: 10px; }
   .task-actions { margin-left: auto; align-self: center; }
   .plan-hint { flex-direction: column; align-items: flex-start; }
+  .trace-stats { gap: 20px 28px; }
+  .trace-body { grid-template-columns: 1fr; gap: 16px; }
+  .trace-recent { border-left: 0; padding-left: 0; border-top: 1px solid rgba(150, 185, 235, 0.08); padding-top: 14px; }
   .mistake-row { flex-wrap: wrap; }
   .mistake-row .btn { margin-left: 19px; }
   .share-modal .modal-actions .btn { flex: 1; min-width: 0; }
