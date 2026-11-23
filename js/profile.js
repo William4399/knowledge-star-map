@@ -410,11 +410,12 @@ export function renderProfile(root, handlers = {}) {
 
     <section class="panel">
       <div class="panel-head"><h2>存档与设置</h2><span class="count">本地存储</span></div>
-      <p class="panel-sub">存档只保存在当前浏览器的 localStorage 中，不会上传到任何服务器。换设备时请使用导出 / 导入。</p>
+      <p class="panel-sub">存档只保存在当前浏览器的 localStorage 中，不会上传到任何服务器。换设备时请使用导出 / 导入；通过 HTTPS 或 localhost 访问时可安装到桌面并离线打开。</p>
       <div class="data-actions">
         <button class="btn ghost" data-action="export">导出存档</button>
         <button class="btn ghost" data-action="import">导入存档</button>
         <button class="btn ghost" data-action="onboard">重做入门测评</button>
+        <button class="btn ghost" data-action="install" id="install-app">安装到桌面</button>
         <button class="btn danger" data-action="reset">清空所有数据</button>
       </div>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -441,6 +442,8 @@ export function renderProfile(root, handlers = {}) {
       if (handlers.onReview) handlers.onReview(actionEl.dataset.id);
     } else if (action === 'share') {
       if (handlers.onShare) handlers.onShare();
+    } else if (action === 'install') {
+      if (handlers.onInstall) handlers.onInstall();
     } else if (action === 'export') {
       const stamp = new Date().toISOString().slice(0, 10);
       downloadText(`知识星图-存档-${stamp}.json`, exportText());

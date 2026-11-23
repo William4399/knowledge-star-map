@@ -358,6 +358,7 @@ function renderProfileView() {
       }
     }),
     onShare: () => openShareCard(),
+    onInstall: () => promptInstall(),
     onReset: () => {
       updateAll();
       setView('graph');
@@ -367,7 +368,45 @@ function renderProfileView() {
       if (currentView === 'profile') renderProfileView();
     }
   });
+  syncInstallButton();
 }
+
+/* ============ 安装与离线 ============ */
+let installPrompt = null;
+
+function isStandalone() {
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+}
+
+function syncInstallButton() {
+  const btn = document.getElementById('install-app');
+  if (btn) btn.hidden = isStandalone();
+}
+
+async function promptInstall() {
+  if (!installPrompt) {
+    toast('当前浏览器没有提供安装入口，可用浏览器菜单中的「安装应用 / 添加到主屏幕」', 'info');
+    return;
+  }
+  const prompt = installPrompt;
+  installPrompt = null;
+  prompt.prompt();
+  const choice = await prompt.userChoice;
+  syncInstallButton();
+  if (choice && choice.outcome === 'accepted') toast('正在安装「知识星图」', 'success');
+}
+
+window.addEventListener('beforeinstallprompt', event => {
+  event.preventDefault();
+  installPrompt = event;
+  syncInstallButton();
+});
+
+window.addEventListener('appinstalled', () => {
+  installPrompt = null;
+  syncInstallButton();
+  toast('「知识星图」已安装到桌面', 'success');
+});
 
 /* ============ 方向选择 ============ */
 function openDirectionPicker() {
@@ -446,8 +485,15 @@ function showBootError(message) {
     </div>`;
 }
 
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
 async function boot() {
   load();
+  registerServiceWorker();
   try {
     await loadData();
   } catch (err) {
