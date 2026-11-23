@@ -754,6 +754,20 @@ body[data-view="profile"] .topbar {
 .confirm-modal h2 { font-size: 17px; font-weight: 500; margin-bottom: 10px; color: #eef6ff; }
 .confirm-text { font-size: 12.5px; color: #96a5ba; line-height: 1.8; }
 
+/* 能力档案卡 */
+.profile-badge .btn { margin-top: 10px; }
+.share-backdrop { z-index: 124; }
+.share-modal { width: min(540px, 94vw); }
+.share-preview {
+  display: flex; justify-content: center;
+  border-radius: 14px; overflow: hidden;
+  border: 1px solid rgba(140, 175, 230, 0.18);
+  background: #05080f;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+}
+.share-preview canvas { display: block; width: auto; height: auto; max-width: 100%; max-height: 56vh; }
+.share-modal .modal-actions { justify-content: space-between; }
+
 .challenge-modal {
   width: min(720px, 94vw);
   display: flex; flex-direction: column;
@@ -1284,6 +1298,9 @@ body[data-view="profile"] .topbar {
   .plan-hint { flex-direction: column; align-items: flex-start; }
   .mistake-row { flex-wrap: wrap; }
   .mistake-row .btn { margin-left: 19px; }
+  .share-modal .modal-actions .btn { flex: 1; min-width: 0; }
+  .share-preview canvas { max-height: 46vh; }
+  .profile-badge { text-align: left; }
 
   .checklist { grid-template-columns: 1fr; }
   .galaxy-bars { grid-template-columns: 1fr; }

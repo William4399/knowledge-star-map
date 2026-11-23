@@ -15,11 +15,11 @@ const TITLES = [
   { min: 0, name: '初入星海', note: '从任意一颗没有前置的星开始，先建立正反馈。' }
 ];
 
-function titleFor(count) {
+export function titleFor(count) {
   return TITLES.find(t => count >= t.min);
 }
 
-function matchRole(role, lit) {
+export function matchRole(role, lit) {
   const required = role.required || [];
   const groups = role.anyOfGroups || [];
   const done = required.filter(id => lit[id]).length;
@@ -276,6 +276,7 @@ export function renderProfile(root, handlers = {}) {
         <span class="eyebrow">当前称号</span>
         <b>${escapeHtml(title.name)}</b>
         <span class="muted small">${escapeHtml(onboardingLine)}</span>
+        <button class="btn primary sm" data-action="share">生成能力档案卡</button>
       </div>
     </div>
 
@@ -353,6 +354,8 @@ export function renderProfile(root, handlers = {}) {
       if (handlers.onDirection) handlers.onDirection(actionEl.dataset.id);
     } else if (action === 'review') {
       if (handlers.onReview) handlers.onReview(actionEl.dataset.id);
+    } else if (action === 'share') {
+      if (handlers.onShare) handlers.onShare();
     } else if (action === 'export') {
       const stamp = new Date().toISOString().slice(0, 10);
       downloadText(`知识星图-存档-${stamp}.json`, exportText());

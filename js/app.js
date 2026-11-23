@@ -13,6 +13,7 @@ import { openChallenge } from './challenge.js';
 import { buildPlan, renderPath } from './path.js';
 import { renderPlan } from './plan.js';
 import { renderProfile } from './profile.js';
+import { openShareCard } from './sharecard.js';
 import { openOnboarding } from './onboarding.js';
 import { openNodeList } from './nodelist.js';
 import { escapeHtml, toast, confirmDialog } from './util.js';
@@ -356,6 +357,7 @@ function renderProfileView() {
         if (currentView === 'profile') renderProfileView();
       }
     }),
+    onShare: () => openShareCard(),
     onReset: () => {
       updateAll();
       setView('graph');
