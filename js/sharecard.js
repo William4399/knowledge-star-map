@@ -26,6 +26,23 @@ function glow(ctx, x, y, r, color) {
   ctx.fillRect(x - r, y - r, r * 2, r * 2);
 }
 
+function drawHeatmap(ctx, x, y, size, gap, cells) {
+  const palette = [
+    'rgba(255,255,255,0.05)',
+    'rgba(108,231,168,0.20)',
+    'rgba(108,231,168,0.40)',
+    'rgba(108,231,168,0.68)',
+    'rgba(108,231,168,0.95)'
+  ];
+  cells.forEach((count, index) => {
+    const col = Math.floor(index / 7);
+    const row = index % 7;
+    rr(ctx, x + col * (size + gap), y + row * (size + gap), size, size, 3);
+    ctx.fillStyle = palette[Math.min(4, count)];
+    ctx.fill();
+  });
+}
+
 function buildData(state) {
   const lit = state.lit;
   const mastery = galaxyMastery(lit);
@@ -33,6 +50,35 @@ function buildData(state) {
   const avgBest = records.length
     ? Math.round(records.reduce((sum, r) => sum + r.best, 0) / records.length)
     : 0;
+
+  /* 学习轨迹：与「我的」页同口径，由首次点亮时间还原每日活跃度 */
+  const DAY = 86400000;
+  const litEntries = Object.entries(lit)
+    .map(([id, v]) => ({ at: Number(v && v.at) || 0 }))
+    .filter(item => item.at > 0);
+  const dayCount = {};
+  litEntries.forEach(item => {
+    const d = new Date(item.at);
+    d.setHours(0, 0, 0, 0);
+    dayCount[d.getTime()] = (dayCount[d.getTime()] || 0) + 1;
+  });
+  const dayKeys = Object.keys(dayCount).map(Number).sort((a, b) => a - b);
+  let bestStreak = 0;
+  let run = 0;
+  dayKeys.forEach((ts, index) => {
+    run = index > 0 && ts - dayKeys[index - 1] === DAY ? run + 1 : 1;
+    if (run > bestStreak) bestStreak = run;
+  });
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dow = (today.getDay() + 6) % 7;
+  const heatStart = today.getTime() - dow * DAY - 11 * 7 * DAY;
+  const cells = Array.from({ length: 84 }, (_, index) => {
+    const ts = heatStart + index * DAY;
+    return dayCount[ts] || 0;
+  });
+
   return {
     litCount: Object.keys(lit).length,
     total: Data.nodes.length,
@@ -52,7 +98,13 @@ function buildData(state) {
       .sort((a, b) => b.importance - a.importance)
       .slice(0, 8),
     attempts: state.counters.attempts,
-    avgBest
+    avgBest,
+    trace: {
+      activeDays: dayKeys.length,
+      bestStreak,
+      recent7: litEntries.filter(item => item.at >= today.getTime() - 6 * DAY).length,
+      cells
+    }
   };
 }
 
@@ -96,15 +148,15 @@ function draw(canvas, data) {
 
   // 称号与说明
   ctx.textAlign = 'left';
-  ctx.font = `600 56px ${FONT}`;
+  ctx.font = `600 52px ${FONT}`;
   ctx.fillStyle = '#eef6ff';
-  ctx.fillText(data.title.name, M, 202);
-  ctx.font = `400 22px ${FONT}`;
+  ctx.fillText(data.title.name, M, 190);
+  ctx.font = `400 21px ${FONT}`;
   ctx.fillStyle = 'rgba(160,182,208,0.92)';
-  ctx.fillText(data.title.note, M, 246);
-  ctx.font = `500 22px ${FONT}`;
+  ctx.fillText(data.title.note, M, 231);
+  ctx.font = `500 21px ${FONT}`;
   ctx.fillStyle = 'rgba(140,190,255,0.9)';
-  ctx.fillText(`目标方向 · ${data.role.name}`, M, 294);
+  ctx.fillText(`目标方向 · ${data.role.name}`, M, 272);
 
   // 统计卡
   const stats = [
@@ -116,28 +168,61 @@ function draw(canvas, data) {
   const cardW = (W - M * 2 - 18 * 3) / 4;
   stats.forEach((stat, i) => {
     const x = M + i * (cardW + 18);
-    rr(ctx, x, 330, cardW, 132, 16);
+    rr(ctx, x, 300, cardW, 122, 16);
     ctx.fillStyle = 'rgba(255,255,255,0.035)';
     ctx.fill();
     ctx.strokeStyle = 'rgba(140,175,230,0.14)';
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.textAlign = 'center';
-    ctx.font = `600 38px ${FONT}`;
+    ctx.font = `600 36px ${FONT}`;
     ctx.fillStyle = '#eaf2ff';
-    ctx.fillText(stat.value, x + cardW / 2, 398);
+    ctx.fillText(stat.value, x + cardW / 2, 362);
     ctx.font = `400 17px ${FONT}`;
     ctx.fillStyle = 'rgba(150,170,196,0.88)';
-    ctx.fillText(stat.label, x + cardW / 2, 432);
+    ctx.fillText(stat.label, x + cardW / 2, 396);
+  });
+
+  // 学习轨迹：近 12 周迷你热力图 + 活跃度
+  ctx.textAlign = 'left';
+  ctx.font = `600 22px ${FONT}`;
+  ctx.fillStyle = 'rgba(200,218,240,0.92)';
+  ctx.fillText('学习轨迹 · 近 12 周', M, 472);
+
+  const cell = 14;
+  const cellGap = 4;
+  const heatY = 494;
+  drawHeatmap(ctx, M, heatY, cell, cellGap, data.trace.cells);
+
+  ctx.font = `400 14px ${FONT}`;
+  ctx.fillStyle = 'rgba(126,145,170,0.75)';
+  ctx.fillText('每列一周 · 从周一开始', M, heatY + 136);
+
+  const traceStats = [
+    { label: '活跃天数', value: String(data.trace.activeDays) },
+    { label: '最长连续', value: `${data.trace.bestStreak} 天` },
+    { label: '近 7 天点亮', value: String(data.trace.recent7) }
+  ];
+  const statLeft = M + 12 * (cell + cellGap) - cellGap + 58;
+  const statGap = (W - M - statLeft) / 3;
+  traceStats.forEach((stat, i) => {
+    const x = statLeft + i * statGap;
+    ctx.textAlign = 'left';
+    ctx.font = `600 30px ${FONT}`;
+    ctx.fillStyle = '#eaf2ff';
+    ctx.fillText(stat.value, x, heatY + 56);
+    ctx.font = `400 16px ${FONT}`;
+    ctx.fillStyle = 'rgba(150,170,196,0.9)';
+    ctx.fillText(stat.label, x, heatY + 84);
   });
 
   // 星系掌握度
   ctx.textAlign = 'left';
   ctx.font = `600 22px ${FONT}`;
   ctx.fillStyle = 'rgba(200,218,240,0.92)';
-  ctx.fillText('星系掌握度 · TOP 4', M, 528);
+  ctx.fillText('星系掌握度 · TOP 4', M, 676);
   data.topGalaxies.forEach((g, i) => {
-    const mid = 564 + i * 64;
+    const mid = 706 + i * 54;
     ctx.font = `400 21px ${FONT}`;
     ctx.fillStyle = g.ratio > 0 ? 'rgba(214,232,255,0.92)' : 'rgba(140,156,178,0.68)';
     ctx.textAlign = 'left';
@@ -166,9 +251,9 @@ function draw(canvas, data) {
   ctx.textAlign = 'left';
   ctx.font = `600 22px ${FONT}`;
   ctx.fillStyle = 'rgba(200,218,240,0.92)';
-  ctx.fillText('岗位匹配度 · TOP 3', M, 838);
+  ctx.fillText('岗位匹配度 · TOP 3', M, 908);
   data.matches.forEach((m, i) => {
-    const top = 862 + i * 86;
+    const top = 928 + i * 66;
     ctx.font = `500 23px ${FONT}`;
     ctx.fillStyle = 'rgba(226,238,252,0.95)';
     ctx.textAlign = 'left';
@@ -178,11 +263,11 @@ function draw(canvas, data) {
     ctx.textAlign = 'right';
     ctx.fillText(`${m.pct}%`, W - M, top + 25);
     const trackW = W - M * 2;
-    rr(ctx, M, top + 42, trackW, 8, 4);
+    rr(ctx, M, top + 40, trackW, 8, 4);
     ctx.fillStyle = 'rgba(255,255,255,0.06)';
     ctx.fill();
     if (m.pct > 0) {
-      rr(ctx, M, top + 42, Math.max(8, trackW * (m.pct / 100)), 8, 4);
+      rr(ctx, M, top + 40, Math.max(8, trackW * (m.pct / 100)), 8, 4);
       ctx.fillStyle = i === 0 ? '#6ce7a8' : '#7fb3ff';
       ctx.fill();
     }
@@ -192,16 +277,16 @@ function draw(canvas, data) {
   ctx.textAlign = 'left';
   ctx.font = `600 22px ${FONT}`;
   ctx.fillStyle = 'rgba(200,218,240,0.92)';
-  ctx.fillText('已点亮的核心知识点', M, 1140);
+  ctx.fillText('已点亮的核心知识点', M, 1146);
 
   if (!data.coreLit.length) {
     ctx.font = `400 21px ${FONT}`;
     ctx.fillStyle = 'rgba(140,156,178,0.8)';
-    ctx.fillText('从任意一颗没有前置的星开始，先点亮第一颗核心知识点。', M, 1186);
+    ctx.fillText('从任意一颗没有前置的星开始，先点亮第一颗核心知识点。', M, 1190);
   } else {
-    const chipH = 46;
+    const chipH = 44;
     let x = M;
-    let y = 1160;
+    let y = 1166;
     data.coreLit.forEach(node => {
       ctx.font = `400 19px ${FONT}`;
       const tw = ctx.measureText(node.name).width;
@@ -210,7 +295,7 @@ function draw(canvas, data) {
         x = M;
         y += chipH + 14;
       }
-      if (y > 1222) return;
+      if (y > 1236) return;
       rr(ctx, x, y, cw, chipH, 12);
       ctx.fillStyle = 'rgba(108,231,168,0.07)';
       ctx.fill();
@@ -246,6 +331,9 @@ function summaryText(data) {
   return [
     `【知识星图】${data.title.name}`,
     `已点亮 ${data.litCount}/${data.total} 个知识点，覆盖 ${data.covered} 个星系，挑战 ${data.attempts} 次。`,
+    data.trace.activeDays
+      ? `近 12 周活跃 ${data.trace.activeDays} 天，最长连续 ${data.trace.bestStreak} 天。`
+      : '',
     `目标方向：${data.role.name}；岗位匹配：${top}。`,
     data.coreLit.length ? `代表能力：${data.coreLit.slice(0, 5).map(n => n.name).join('、')}。` : '',
     '把课程知识连成一张可验证的能力星图。'
@@ -301,7 +389,7 @@ function showModal(canvas, data) {
       <div class="modal-head">
         <span class="eyebrow">能力档案卡</span>
         <h2 id="sc-title">把这一阶段的星空发出去</h2>
-        <p class="modal-sub">1080 × 1350 · 适合朋友圈 / 小红书 / 作品集封面</p>
+        <p class="modal-sub">1080 × 1350 · 含 12 周学习轨迹 · 适合朋友圈 / 小红书 / 作品集封面</p>
       </div>
       <div class="share-preview"></div>
       <div class="modal-actions">
