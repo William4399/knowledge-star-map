@@ -107,6 +107,7 @@ export function initGraph(el, options = {}) {
   graph.nodeCanvasObject(drawStarNode);
   graph.nodePointerAreaPaint(drawPointerArea);
   graph.onRenderFramePre(drawNebulae);
+  graph.onRenderFramePost(drawEdgeMask);
 
   resize();
 
@@ -259,6 +260,74 @@ function drawNebulae(ctx, globalScale) {
   }
 }
 
+/* ============ 边界星云遮蔽（Post：盖在节点上层） ============ */
+function drawEdgeMask(ctx) {
+  if (!graph || !container) return;
+  const W = container.clientWidth;
+  const H = container.clientHeight;
+  const edge = Math.min(W, H) * 0.15;
+  const edgeBg = 'rgba(9,13,23,'; // 与页面背景 #090d17 对齐
+
+  // 上
+  let g = ctx.createLinearGradient(0, 0, 0, edge);
+  g.addColorStop(0, edgeBg + '0.96)');
+  g.addColorStop(1, edgeBg + '0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, edge);
+
+  // 下
+  g = ctx.createLinearGradient(0, H - edge, 0, H);
+  g.addColorStop(0, edgeBg + '0)');
+  g.addColorStop(1, edgeBg + '0.96)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, H - edge, W, edge);
+
+  // 左
+  g = ctx.createLinearGradient(0, 0, edge, 0);
+  g.addColorStop(0, edgeBg + '0.96)');
+  g.addColorStop(1, edgeBg + '0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, edge, edge, H - edge * 2);
+
+  // 右
+  g = ctx.createLinearGradient(W - edge, 0, W, 0);
+  g.addColorStop(0, edgeBg + '0)');
+  g.addColorStop(1, edgeBg + '0.96)');
+  ctx.fillStyle = g;
+  ctx.fillRect(W - edge, edge, edge, H - edge * 2);
+
+  // 四角：用径向渐变把四个角柔化
+  const cornerSize = edge * 1.4;
+  // 左上
+  g = ctx.createRadialGradient(0, 0, 0, 0, 0, cornerSize);
+  g.addColorStop(0, edgeBg + '0.98)');
+  g.addColorStop(0.5, edgeBg + '0.55)');
+  g.addColorStop(1, edgeBg + '0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, cornerSize, cornerSize);
+  // 右上
+  g = ctx.createRadialGradient(W, 0, 0, W, 0, cornerSize);
+  g.addColorStop(0, edgeBg + '0.98)');
+  g.addColorStop(0.5, edgeBg + '0.55)');
+  g.addColorStop(1, edgeBg + '0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(W - cornerSize, 0, cornerSize, cornerSize);
+  // 左下
+  g = ctx.createRadialGradient(0, H, 0, 0, H, cornerSize);
+  g.addColorStop(0, edgeBg + '0.98)');
+  g.addColorStop(0.5, edgeBg + '0.55)');
+  g.addColorStop(1, edgeBg + '0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, H - cornerSize, cornerSize, cornerSize);
+  // 右下
+  g = ctx.createRadialGradient(W, H, 0, W, H, cornerSize);
+  g.addColorStop(0, edgeBg + '0.98)');
+  g.addColorStop(0.5, edgeBg + '0.55)');
+  g.addColorStop(1, edgeBg + '0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(W - cornerSize, H - cornerSize, cornerSize, cornerSize);
+}
+
 /* ============ 星星（柔光 + 弧光 + 星核） ============ */
 function drawStarNode(node, ctx, globalScale) {
   const r = starRadius(node);
@@ -269,40 +338,56 @@ function drawStarNode(node, ctx, globalScale) {
   const recommended = highlight.has(node.id) && !lit;
 
   const t = nowSec();
-  const twinkle = reduceMotion ? 0.92 : 0.74 + 0.26 * Math.sin(t * node.tSpeed + node.phase);
+  const unlit = !lit && !claimed;
+  const twinkle = unlit ? 0.5 : (reduceMotion ? 0.92 : 0.74 + 0.26 * Math.sin(t * node.tSpeed + node.phase));
   const hovered = hoveredNode && hoveredNode.id === node.id;
   const baseIntensity = lit ? 1.15 : claimed ? 0.68 : 0.42;
-  const intensity = twinkle * baseIntensity * (hovered ? 1.7 : 1);
+  const intensity = unlit ? baseIntensity : twinkle * baseIntensity * (hovered ? 1.7 : 1);
 
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
 
-  // 大范围柔光
-  const glowR = r * (hovered ? 7 : 5.6);
-  const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowR);
-  glow.addColorStop(0, hexToRgba(galaxyColor, 0.62 * intensity));
-  glow.addColorStop(0.22, hexToRgba(galaxyColor, 0.24 * intensity));
-  glow.addColorStop(0.55, hexToRgba(galaxyColor, 0.07 * intensity));
-  glow.addColorStop(1, hexToRgba(galaxyColor, 0));
-  ctx.fillStyle = glow;
-  ctx.beginPath();
-  ctx.arc(node.x, node.y, glowR, 0, TAU);
-  ctx.fill();
+  if (unlit) {
+    // 未点亮：暗淡星系色星核 + 极小柔边，不闪烁、不画弧光
+    const coreG = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, r * 2.1);
+    coreG.addColorStop(0, hexToRgba(galaxyColor, 0.48));
+    coreG.addColorStop(0.5, hexToRgba(galaxyColor, 0.18));
+    coreG.addColorStop(1, hexToRgba(galaxyColor, 0));
+    ctx.fillStyle = coreG;
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, r * 2.1, 0, TAU);
+    ctx.fill();
 
-  // 弧光：两道拉长的光弧
-  drawFlare(ctx, node.x, node.y, r * 7.5, 0, galaxyColor, 0.5 * intensity);
-  drawFlare(ctx, node.x, node.y, r * 6.2, Math.PI / 2, galaxyColor, 0.3 * intensity);
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, r * 0.5, 0, TAU);
+    ctx.fillStyle = 'rgba(220,230,245,0.48)';
+    ctx.fill();
+  } else {
+    // 已点亮 / 待验证：柔光 + 弧光 + 星核（闪烁）
+    const glowR = r * (hovered ? 7 : 5.6);
+    const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowR);
+    glow.addColorStop(0, hexToRgba(galaxyColor, 0.62 * intensity));
+    glow.addColorStop(0.22, hexToRgba(galaxyColor, 0.24 * intensity));
+    glow.addColorStop(0.55, hexToRgba(galaxyColor, 0.07 * intensity));
+    glow.addColorStop(1, hexToRgba(galaxyColor, 0));
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, glowR, 0, TAU);
+    ctx.fill();
 
-  // 星核
-  ctx.beginPath();
-  ctx.arc(node.x, node.y, r * 1.25, 0, TAU);
-  ctx.fillStyle = hexToRgba(galaxyColor, 0.55 * intensity);
-  ctx.fill();
+    drawFlare(ctx, node.x, node.y, r * 7.5, 0, galaxyColor, 0.5 * intensity);
+    drawFlare(ctx, node.x, node.y, r * 6.2, Math.PI / 2, galaxyColor, 0.3 * intensity);
 
-  ctx.beginPath();
-  ctx.arc(node.x, node.y, r * 0.6, 0, TAU);
-  ctx.fillStyle = `rgba(255,255,255,${(lit ? 0.92 : claimed ? 0.68 : 0.5) * (0.8 + 0.2 * twinkle)})`;
-  ctx.fill();
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, r * 1.25, 0, TAU);
+    ctx.fillStyle = hexToRgba(galaxyColor, 0.55 * intensity);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, r * 0.6, 0, TAU);
+    ctx.fillStyle = `rgba(255,255,255,${(lit ? 0.92 : 0.68) * (0.8 + 0.2 * twinkle)})`;
+    ctx.fill();
+  }
 
   // 已点亮：一圈淡色星环
   if (lit) {
@@ -394,24 +479,24 @@ function drawLink(link, ctx, globalScale) {
   const tg = galaxyOf(t);
   const color = tg ? tg.color : '#9dc7ff';
   const isPrereq = link.type === 'prerequisite';
-  const baseAlpha = isPrereq ? 0.1 : 0.055;
-  const flowAlpha = isPrereq ? 0.42 : 0.24;
+  const baseAlpha = isPrereq ? 0.14 : 0.08;
+  const flowAlpha = isPrereq ? 0.62 : 0.38;
 
   ctx.beginPath();
   ctx.moveTo(s.x, s.y);
   ctx.lineTo(t.x, t.y);
   ctx.strokeStyle = hexToRgba(color, baseAlpha);
-  ctx.lineWidth = (isPrereq ? 0.85 : 0.6) / globalScale;
+  ctx.lineWidth = (isPrereq ? 1.15 : 0.85) / globalScale;
   ctx.stroke();
 
   if (reduceMotion) return;
 
   const len = Math.hypot(t.x - s.x, t.y - s.y);
   if (len < 1) return;
-  const dash = Math.min(16, len * 0.14);
-  const gap = Math.max(70, len * 0.85);
+  const dash = Math.min(22, len * 0.18);
+  const gap = Math.max(64, len * 0.78);
   const period = dash + gap;
-  const off = (performance.now() * 0.05 + link.seed) % period;
+  const off = (performance.now() * 0.065 + link.seed) % period;
 
   ctx.beginPath();
   ctx.moveTo(s.x, s.y);
@@ -419,17 +504,17 @@ function drawLink(link, ctx, globalScale) {
   ctx.setLineDash([dash, gap]);
   ctx.lineDashOffset = -off;
   ctx.strokeStyle = hexToRgba(color, flowAlpha);
-  ctx.lineWidth = (isPrereq ? 1.0 : 0.75) / globalScale;
+  ctx.lineWidth = (isPrereq ? 1.45 : 1.1) / globalScale;
   ctx.stroke();
   ctx.setLineDash([]);
 
-  const p = (performance.now() * 0.0001 * link.speed + link.seed / 200) % 1;
+  const p = (performance.now() * 0.00013 * link.speed + link.seed / 200) % 1;
   const px = s.x + (t.x - s.x) * p;
   const py = s.y + (t.y - s.y) * p;
-  const dotR = isPrereq ? 3.6 : 2.6;
+  const dotR = isPrereq ? 4.4 : 3.2;
   const dg = ctx.createRadialGradient(px, py, 0, px, py, dotR);
-  dg.addColorStop(0, hexToRgba(color, isPrereq ? 0.9 : 0.55));
-  dg.addColorStop(0.35, hexToRgba(color, isPrereq ? 0.32 : 0.18));
+  dg.addColorStop(0, hexToRgba(color, isPrereq ? 0.95 : 0.7));
+  dg.addColorStop(0.35, hexToRgba(color, isPrereq ? 0.4 : 0.22));
   dg.addColorStop(1, hexToRgba(color, 0));
   ctx.fillStyle = dg;
   ctx.beginPath();

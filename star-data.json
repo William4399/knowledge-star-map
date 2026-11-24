@@ -14,8 +14,8 @@
     { "id": "net",     "name": "网络与 Web",     "ka": "NC",        "color": "#22D3EE", "ax": 590,  "ay": -192 },
     { "id": "backend", "name": "后端与架构",     "ka": "SWEBOK 架构", "color": "#F472B6", "ax": 590, "ay": 192 },
     { "id": "data",    "name": "数据与存储",     "ka": "DM",        "color": "#EFAA17", "ax": 364,  "ay": 502 },
-    { "id": "se",      "name": "软件工程",       "ka": "SWEBOK 需求/测试", "color": "#94A3B8", "ax": 0, "ay": 620 },
-    { "id": "eng",     "name": "工程实践",       "ka": "SWEBOK CM",  "color": "#64748B", "ax": -364, "ay": 502 },
+    { "id": "se",      "name": "软件工程",       "ka": "SWEBOK 需求/测试", "color": "#F59E0B", "ax": 0, "ay": 620 },
+    { "id": "eng",     "name": "工程实践",       "ka": "SWEBOK CM",  "color": "#14B8A6", "ax": -364, "ay": 502 },
     { "id": "ai",      "name": "人工智能",       "ka": "AI",        "color": "#E879F9", "ax": -590, "ay": 192 },
     { "id": "math",    "name": "数学基础",       "ka": "MSF",       "color": "#C084FC", "ax": -590, "ay": -192 },
     { "id": "sec",     "name": "安全基础",       "ka": "SEC",       "color": "#F87171", "ax": -364, "ay": -502 }
