@@ -22,8 +22,53 @@ function blank() {
     settings: { highlight: true },
     counters: { attempts: 0, answered: 0, correct: 0 },
     plan: null,
-    mistakes: {}
+    mistakes: {},
+    concepts: {}
   };
+}
+
+function sanitizeSnapshot(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const stem = typeof raw.stem === 'string' ? raw.stem.slice(0, 140) : '';
+  if (!stem) return null;
+  const snap = {
+    stem,
+    type: raw.type === 'short' ? 'short' : 'choice',
+    options: Array.isArray(raw.options)
+      ? raw.options.filter(x => typeof x === 'string').slice(0, 4).map(x => x.slice(0, 60))
+      : [],
+    answer: Number.isFinite(Number(raw.answer)) ? Number(raw.answer) : null,
+    keywords: Array.isArray(raw.keywords)
+      ? raw.keywords.filter(x => typeof x === 'string').slice(0, 6).map(x => x.slice(0, 16))
+      : [],
+    conceptId: typeof raw.conceptId === 'string' ? raw.conceptId.slice(0, 32) : null,
+    explain: typeof raw.explain === 'string' ? raw.explain.slice(0, 160) : '',
+    reference: typeof raw.reference === 'string' ? raw.reference.slice(0, 200) : '',
+    ref: raw.ref && typeof raw.ref === 'object'
+      ? { title: String(raw.ref.title || '').slice(0, 60), url: String(raw.ref.url || '').slice(0, 140) }
+      : null
+  };
+  if (JSON.stringify(snap).length > 600) delete snap.explain;
+  if (JSON.stringify(snap).length > 600) delete snap.reference;
+  if (JSON.stringify(snap).length > 600) {
+    snap.options = snap.options.slice(0, 3).map(x => x.slice(0, 40));
+    snap.keywords = snap.keywords.slice(0, 4);
+  }
+  return snap;
+}
+
+function sanitizeConcepts(raw) {
+  if (!raw || typeof raw !== 'object') return {};
+  const out = {};
+  Object.keys(raw).slice(0, 500).forEach(id => {
+    const v = raw[id];
+    if (!v || typeof v !== 'object') return;
+    out[id.slice(0, 32)] = {
+      seen: Math.max(0, Number(v.seen) || 0),
+      ok: Math.max(0, Number(v.ok) || 0)
+    };
+  });
+  return out;
 }
 
 function sanitizeMistakes(raw) {
@@ -32,13 +77,18 @@ function sanitizeMistakes(raw) {
   Object.keys(raw).slice(0, 200).forEach(qid => {
     const v = raw[qid];
     if (!v || typeof v !== 'object' || typeof v.node !== 'string') return;
+    const snapshot = sanitizeSnapshot(v.snapshot);
+    // 旧版动态题 id 含 _dyn_ 且没有快照，已无法还原题目，直接清理
+    if (!snapshot && /^q_.*_dyn_/.test(qid)) return;
     out[qid] = {
       node: v.node,
       type: v.type === 'short' ? 'short' : 'choice',
       chosen: Number.isFinite(Number(v.chosen)) ? Number(v.chosen) : null,
       missing: Array.isArray(v.missing) ? v.missing.filter(x => typeof x === 'string').slice(0, 10) : [],
       at: Number(v.at) || Date.now(),
-      count: Math.max(1, Number(v.count) || 1)
+      count: Math.max(1, Number(v.count) || 1),
+      conceptId: typeof v.conceptId === 'string' ? v.conceptId.slice(0, 32) : (snapshot?.conceptId || null),
+      snapshot
     };
   });
   return out;
@@ -118,6 +168,7 @@ function sanitize(raw) {
   }
   base.plan = sanitizePlan(raw.plan);
   base.mistakes = sanitizeMistakes(raw.mistakes);
+  base.concepts = sanitizeConcepts(raw.concepts);
   return base;
 }
 
@@ -185,13 +236,31 @@ function applyMistakeData(nodeId, data) {
   wrong.forEach(item => {
     if (!item || !item.qid) return;
     const prev = state.mistakes[item.qid];
+    const snapshot = sanitizeSnapshot(item.snapshot) || prev?.snapshot || null;
     state.mistakes[item.qid] = {
       node: nodeId,
       type: item.type === 'short' ? 'short' : 'choice',
       chosen: Number.isFinite(Number(item.chosen)) ? Number(item.chosen) : null,
       missing: Array.isArray(item.missing) ? item.missing.slice(0, 10) : [],
       at: Date.now(),
-      count: (prev && prev.count ? prev.count : 0) + 1
+      count: (prev && prev.count ? prev.count : 0) + 1,
+      conceptId: typeof item.conceptId === 'string'
+        ? item.conceptId.slice(0, 32)
+        : (snapshot?.conceptId || null),
+      snapshot
+    };
+  });
+}
+
+function applyConceptData(data) {
+  const list = Array.isArray(data?.concepts) ? data.concepts : [];
+  list.forEach(item => {
+    if (!item || typeof item.conceptId !== 'string') return;
+    if (item.conceptId.startsWith('static:')) return;
+    const prev = state.concepts[item.conceptId] || { seen: 0, ok: 0 };
+    state.concepts[item.conceptId] = {
+      seen: prev.seen + 1,
+      ok: prev.ok + (item.ok ? 1 : 0)
     };
   });
 }
@@ -215,6 +284,7 @@ export function unlightNode(id) {
 }
 
 export function passChallenge(id, score, mistakeData) {
+  applyConceptData(mistakeData);
   const rec = state.records[id] || { attempts: 0, best: 0 };
   rec.attempts += 1;
   rec.best = Math.max(rec.best || 0, score);
@@ -245,6 +315,7 @@ export function failChallenge(id, score, mistakeData) {
   state.records[id] = rec;
   state.counters.attempts += 1;
   applyMistakeData(id, mistakeData);
+  applyConceptData(mistakeData);
   emit('challenge-fail', { id, score });
 }
 

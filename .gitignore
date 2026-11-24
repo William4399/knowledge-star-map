@@ -18,6 +18,11 @@ venv/
 *.log
 *.tmp
 .trae-html-share-packages/
+.screenshots/
+tmp-questions/
+
+# 依赖与本地工具环境
+node_modules/
 
 # 本地凭据
 .token

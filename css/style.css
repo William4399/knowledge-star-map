@@ -1,3 +1,12 @@
+/* 中文正文：Noto Sans SC 可变字体，按项目实际用字子集化，跨平台一致 */
+@font-face {
+  font-family: "Noto Sans SC Local";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../vendor/fonts/noto-sans-sc.woff2") format("woff2");
+}
+
 :root {
   color-scheme: dark;
   --bg: #03060f;
@@ -11,7 +20,9 @@
   --blue: #7fb4f5;
   --danger: #ff8f8f;
   --radius: 16px;
-  --font: -apple-system, "PingFang SC", system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font: "Poppins", "Noto Sans SC Local", -apple-system, "PingFang SC", system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-display: "Poppins", "Noto Sans SC Local", -apple-system, "PingFang SC", system-ui, sans-serif;
+  --font-body: "Lora", "Noto Sans SC Local", -apple-system, "PingFang SC", "Georgia", serif;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -20,26 +31,42 @@ html, body { width: 100%; height: 100%; }
 body {
   overflow: hidden;
   background-color: var(--bg);
-  background-image:
-    radial-gradient(ellipse at 50% 48%, rgba(3, 6, 15, 0.5) 0%, rgba(3, 6, 15, 0.78) 58%, rgba(2, 4, 10, 0.95) 100%),
-    url('../assets/bg-nebula.jpg');
-  background-size: cover, cover;
-  background-position: center center, center center;
-  background-repeat: no-repeat, no-repeat;
-  background-attachment: fixed, fixed;
   font-family: var(--font);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+}
+
+/* 程序化星云层（WebGL），按视口渲染，缩放不糊 */
+#nebula-fx {
+  position: fixed; left: -10%; top: -10%;
+  width: 120%; height: 120%;
+  z-index: 0; pointer-events: none;
+  display: block;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+/* 压暗层固定在视口，保证边缘和文字对比度 */
+#bg-shade {
+  position: fixed; inset: 0;
+  z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 48%,
+    rgba(3, 6, 15, 0.16) 0%,
+    rgba(3, 6, 15, 0.4) 58%,
+    rgba(2, 4, 10, 0.72) 100%);
 }
 button, input, select, textarea { font-family: inherit; color: inherit; }
 button { cursor: pointer; }
 a { color: inherit; }
 
-#starfield {
+#starfield, #space-bg {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   z-index: 0; pointer-events: none;
 }
+
+/* 星空画布只叠加光，让 body 的星云底图透出来 */
+#space-bg { mix-blend-mode: screen; }
 #graph-container {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
@@ -1427,4 +1454,371 @@ body[data-view="profile"] .topbar {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ============ 知识库新增 UI ============ */
+.kb-resource {
+  display: block;
+  padding: 7px 10px;
+  margin: 4px 0;
+  border: 1px solid rgba(150, 185, 235, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 12px;
+  color: #cfdcec;
+  text-decoration: none;
+  transition: border-color 0.16s, background 0.16s;
+}
+.kb-resource:hover {
+  border-color: rgba(108, 231, 168, 0.4);
+  background: rgba(80, 220, 150, 0.06);
+  color: #b6f3d6;
+}
+.kb-templates {
+  display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px;
+}
+.kb-template-tag {
+  font-size: 10.5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(127, 180, 245, 0.1);
+  border: 1px solid rgba(127, 180, 245, 0.2);
+  color: #9fc4ed;
+}
+
+/* 薄弱领域面板 */
+.weak-panel .weak-list {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.weak-row {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 12px;
+  border: 1px solid rgba(240, 160, 110, 0.16);
+  border-radius: 10px;
+  background: rgba(240, 160, 110, 0.04);
+}
+.weak-main {
+  flex: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.weak-main b { font-size: 13px; color: #e6d8c4; font-weight: 500; }
+.weak-row .btn { flex: none; }
+
+/* challenge 动态题提示 */
+.challenge-note a {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+.challenge-note a:hover { color: #b6f3d6 !important; }
+
+/* ============================================================
+   UI v2 · 结构优先（arrange / distill / typeset / clarify）
+   规则：只有「下一关」发光，其余一律安静。
+   ============================================================ */
+:root {
+  --next: #f5c451;
+  --next-line: rgba(245, 196, 81, 0.55);
+  --panel-solid: #0b1220;
+}
+
+/* ---------- 阅读面：实色底，星野不穿透 ---------- */
+.view-page {
+  background: linear-gradient(180deg, rgba(3, 6, 15, 0.9) 0%, rgba(3, 6, 15, 0.96) 42%, #03060f 100%);
+  backdrop-filter: none;
+}
+.panel {
+  background: linear-gradient(180deg, #0b1120 0%, #080d17 100%);
+  border-color: rgba(140, 175, 230, 0.12);
+  backdrop-filter: none;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+.page-head p { font-size: 13.5px; color: #94a3b8; }
+.panel-sub { font-size: 12.5px; color: #8b98ad; }
+.small { font-size: 12.5px; }
+.page-foot { font-size: 11px; }
+.muted { color: #93a1b6; }
+
+/* ---------- 详情卡：固定头 + 滚动体 + 吸底主按钮 ---------- */
+.detail-card {
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  width: 352px;
+  max-height: 76vh;
+  background: linear-gradient(180deg, #0c1220, #070b14);
+  border-color: rgba(140, 175, 230, 0.18);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.72);
+}
+.detail-card.show { display: flex; }
+.detail-head {
+  flex: none;
+  position: relative;
+  padding: 20px 20px 12px;
+  border-bottom: 1px solid rgba(150, 185, 235, 0.1);
+}
+.detail-head h2 {
+  font-size: 18px; font-weight: 500; letter-spacing: 0.4px;
+  color: #eef6ff; margin-bottom: 8px; padding-right: 30px;
+}
+.detail-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.detail-tag {
+  font-size: 11px; padding: 2px 9px; border-radius: 999px;
+  border: 1px solid rgba(150, 185, 235, 0.22);
+  color: #9fb0c9; white-space: nowrap;
+}
+.detail-tag.is-lit { color: #6ce7a8; border-color: rgba(108, 231, 168, 0.35); background: rgba(108, 231, 168, 0.08); }
+.detail-tag.is-claimed { color: #c8b48a; border-color: rgba(200, 180, 138, 0.32); }
+.detail-card .close-btn {
+  top: 12px; right: 12px;
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  border-radius: 7px; font-size: 15px;
+}
+.detail-card .close-btn:hover { background: rgba(255, 255, 255, 0.05); }
+.detail-body {
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px 18px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(140, 175, 230, 0.25) transparent;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 9px);
+  mask-image: linear-gradient(180deg, transparent 0, #000 9px);
+}
+.detail-foot {
+  flex: none;
+  padding: 12px 20px 16px;
+  border-top: 1px solid rgba(150, 185, 235, 0.1);
+  background: #080d17;
+}
+.detail-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+.detail-metrics > div {
+  border: 1px solid rgba(150, 185, 235, 0.1);
+  border-radius: 10px; padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.detail-metrics span { display: block; font-size: 11px; color: #7d8ba1; margin-bottom: 3px; }
+.detail-metrics b { font-size: 14px; font-weight: 500; color: #e6f0ff; }
+.detail-card p.desc { font-size: 13.5px; color: #a9b6cc; line-height: 1.78; margin-bottom: 16px; }
+.detail-section { margin-bottom: 16px; }
+.detail-section:last-child { margin-bottom: 0; }
+.detail-label {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 11px; letter-spacing: 1px; color: #7d8ba1;
+  margin-bottom: 8px;
+}
+.detail-label em { font-style: normal; letter-spacing: 0; color: #5f6c84; }
+.detail-card .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.detail-card .chips.gap { margin-top: 6px; }
+.detail-card .chips-label { font-size: 11px; color: #5f6c84; }
+.detail-card .chips span {
+  font-size: 12px; padding: 3px 9px; border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05); color: #9aa8bd;
+}
+.detail-card .chips span.done { background: rgba(80, 230, 160, 0.12); color: #6ce7a8; }
+.detail-card .resources { display: flex; flex-direction: column; gap: 6px; }
+.detail-card .resources a,
+.detail-card .resource {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 12.5px; color: #a9c6ea; text-decoration: none;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(150, 185, 235, 0.1);
+  border-radius: 8px;
+}
+.detail-card .resources a:hover {
+  background: rgba(120, 170, 240, 0.1);
+  color: #d3e6ff;
+  border-color: rgba(160, 200, 255, 0.26);
+}
+.detail-card .resource.muted { color: #6b7a94; }
+.res-mark {
+  position: relative;
+  width: 12px; height: 12px; flex: none;
+  border: 1px solid rgba(150, 185, 235, 0.34);
+  border-radius: 3px;
+}
+.res-mark::after {
+  content: ''; position: absolute; inset: 3px;
+  border-radius: 1px; background: rgba(150, 185, 235, 0.5);
+}
+.detail-cta {
+  width: 100%; padding: 12px; margin-top: 2px;
+  border: none; border-radius: 10px;
+  font-size: 14px; font-weight: 600; letter-spacing: 0.4px;
+  background: linear-gradient(135deg, #7df0b6, #34c98c);
+  color: #04231a;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.detail-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(60, 200, 140, 0.24); }
+.detail-cta:disabled {
+  background: rgba(255, 255, 255, 0.05);
+  color: #7a8699; cursor: not-allowed; transform: none; box-shadow: none;
+}
+.detail-link {
+  display: block; width: 100%; margin-top: 8px;
+  background: none; border: none; padding: 2px 0;
+  font-size: 12px; color: #7d8ba1;
+  text-decoration: underline; text-underline-offset: 3px;
+  text-decoration-color: rgba(150, 185, 235, 0.3);
+}
+.detail-link:hover { color: #d9e7fb; }
+.detail-state { text-align: center; font-size: 13px; color: #6ce7a8; margin-bottom: 8px; }
+.detail-sub { text-align: center; font-size: 12px; color: #7d8ba1; margin-top: 8px; line-height: 1.6; }
+.detail-note { font-size: 12px; color: #c8b48a; margin-bottom: 8px; line-height: 1.6; }
+
+/* ---------- 路径页：序号 + 单主行动 + 下一关发光 ---------- */
+.target {
+  position: relative;
+  display: flex; justify-content: space-between; gap: 18px;
+  padding: 16px 0;
+}
+.target-desc { font-size: 13px; color: #8b98ad; line-height: 1.7; margin-bottom: 9px; max-width: 640px; }
+.target-meta { font-size: 12px; color: #7b8aa1; gap: 16px; }
+.target-actions { align-items: stretch; gap: 4px; }
+.target-index {
+  font-size: 12px; letter-spacing: 1px;
+  color: #5f6c84; font-variant-numeric: tabular-nums;
+  min-width: 18px;
+}
+.target.is-next {
+  margin: 2px 0 8px;
+  padding: 16px;
+  border: 1px solid var(--next-line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(245, 196, 81, 0.07), rgba(245, 196, 81, 0.015));
+  animation: nextPulse 2.4s ease-in-out infinite;
+}
+.target.is-next:first-child { padding-top: 16px; }
+.target.is-next .target-index { color: var(--next); }
+@keyframes nextPulse {
+  0%, 100% { border-color: rgba(245, 196, 81, 0.45); box-shadow: 0 0 0 0 rgba(245, 196, 81, 0); }
+  50% { border-color: rgba(245, 196, 81, 0.95); box-shadow: 0 0 0 3px rgba(245, 196, 81, 0.13), 0 0 26px rgba(245, 196, 81, 0.14); }
+}
+.next-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.6px;
+  padding: 2px 8px; border-radius: 999px;
+  color: #1a1200; background: var(--next);
+}
+.next-badge::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  background: #1a1200;
+  animation: nextBlink 1.2s ease-in-out infinite;
+}
+@keyframes nextBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.link-btn {
+  background: none; border: none; padding: 2px 0;
+  font-size: 12px; color: #7d8ba1; text-align: right;
+  text-decoration: underline; text-underline-offset: 3px;
+  text-decoration-color: rgba(150, 185, 235, 0.28);
+}
+.link-btn:hover { color: #d9e7fb; }
+.tag { font-size: 11px; padding: 2px 8px; }
+.tag-must { color: #9fc4ed; border-color: rgba(127, 180, 245, 0.32); background: rgba(127, 180, 245, 0.08); }
+.tag-rec { color: #9fb0c9; }
+.tag-weak { color: #f0c48a; border-color: rgba(240, 180, 110, 0.32); background: rgba(240, 180, 110, 0.08); }
+.upcoming-main b { font-size: 13px; }
+.upcoming-main p { font-size: 12px; color: #74849b; }
+.checklist li { font-size: 12.5px; }
+.checklist .check-galaxy { font-size: 11px; }
+.hero-copy .muted { font-size: 12.5px; }
+.hero-stat span { font-size: 11px; }
+
+/* ---------- 按钮与标签：触达面积与字号 ---------- */
+.btn { font-size: 12.5px; }
+.btn.sm { font-size: 12px; padding: 7px 14px; min-height: 32px; }
+.btn:focus-visible, .link-btn:focus-visible, .detail-cta:focus-visible,
+.detail-link:focus-visible, .challenge-more summary:focus-visible {
+  outline: 2px solid rgba(140, 205, 255, 0.9);
+  outline-offset: 2px;
+}
+
+/* ---------- 挑战弹窗：摘要 + 可展开 ---------- */
+.challenge-modal {
+  background: linear-gradient(180deg, #0d1421 0%, #080c16 100%);
+}
+.challenge-summary {
+  font-size: 13px; color: #a9b6cc; line-height: 1.7;
+  margin-bottom: 12px;
+}
+.challenge-more {
+  border: 1px solid rgba(150, 185, 235, 0.12);
+  border-radius: 11px;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.challenge-more summary {
+  cursor: pointer; list-style: none;
+  font-size: 12.5px; color: #8cb9ee;
+  padding: 11px 0;
+}
+.challenge-more summary::-webkit-details-marker { display: none; }
+.challenge-more summary::before { content: '+ '; }
+.challenge-more[open] summary::before { content: '− '; }
+.challenge-more[open] summary {
+  border-bottom: 1px solid rgba(150, 185, 235, 0.1);
+  margin-bottom: 9px;
+}
+.challenge-list { list-style: none; display: flex; flex-direction: column; gap: 7px; padding-bottom: 11px; }
+.challenge-list li {
+  position: relative; padding-left: 13px;
+  font-size: 12.5px; color: #8391a6; line-height: 1.65;
+}
+.challenge-list li::before {
+  content: ''; position: absolute; left: 0; top: 8px;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(150, 185, 235, 0.4);
+}
+.challenge-link { font-size: 12.5px; color: #8fe6bd; line-height: 1.6; padding-bottom: 12px; }
+.challenge-link a { text-decoration: underline; text-underline-offset: 2px; }
+.rules li { font-size: 12.5px; }
+
+/* ---------- 移动端导航图标 ---------- */
+.bottom-tab svg {
+  width: 18px; height: 18px;
+  fill: none; stroke: currentColor;
+  stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round;
+  margin-bottom: 1px;
+}
+
+/* ---------- 知识库资源行 ---------- */
+.kb-resource { display: flex; align-items: center; gap: 9px; font-size: 12.5px; }
+.kb-template-more { font-size: 11px; color: #5f6c84; align-self: center; }
+
+/* ---------- 薄弱点：与「下一关」暖黄区分 ---------- */
+.weak-row {
+  border-color: rgba(255, 143, 143, 0.18);
+  background: rgba(255, 143, 143, 0.04);
+}
+.weak-main b { color: #e6dcd4; }
+.weak-panel .tag { color: #ffb3a8 !important; }
+
+/* ---------- 响应式（新结构） ---------- */
+@media (max-width: 760px) {
+  .detail-card {
+    top: auto; bottom: 0; left: 0; right: 0;
+    transform: none;
+    width: 100%;
+    max-height: 84vh;
+    border-radius: 18px 18px 0 0;
+    border-bottom: 0;
+    padding: 0;
+  }
+  .detail-card.show { animation: sheetIn 0.24s ease-out; }
+  .detail-head { padding: 20px 18px 12px; }
+  .detail-body { padding: 14px 18px 16px; }
+  .detail-foot { padding: 12px 18px calc(16px + env(safe-area-inset-bottom)); }
+  .target.is-next { padding: 14px; margin: 0 0 8px; }
+  .target.is-next:first-child { padding-top: 14px; }
+  .link-btn { text-align: left; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .target.is-next {
+    animation: none;
+    border-color: var(--next-line);
+    box-shadow: 0 0 0 2px rgba(245, 196, 81, 0.14);
+  }
+  .next-badge::before { animation: none; }
 }

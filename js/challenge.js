@@ -1,14 +1,46 @@
 import { Data, nodeById, galaxyOf, questionsFor } from './data.js';
 import { getState, passChallenge, failChallenge } from './store.js';
 import { escapeHtml, toast } from './util.js';
+import { QuestionBank, getLearningGuides, CHALLENGE_SIZE } from './kb.js';
 
 let active = null;
+
+// 保存题目快照：动态题下次挑战不会复现，必须靠快照在「待复习」中还原
+function snapshotOf(q) {
+  const snap = {
+    stem: String(q.stem || '').slice(0, 120),
+    type: q.type === 'short' ? 'short' : 'choice',
+    options: q.type === 'choice'
+      ? (q.options || []).slice(0, 4).map(o => String(o).slice(0, 40))
+      : [],
+    answer: q.type === 'choice' ? Number(q.answer) : null,
+    keywords: (q.keywords || []).slice(0, 5).map(k => String(k).slice(0, 12)),
+    conceptId: q.conceptId || null,
+    explain: String(q.explain || '').slice(0, 120),
+    reference: String(q.reference || '').slice(0, 150),
+    ref: Array.isArray(q.refs) && q.refs[0]
+      ? { title: String(q.refs[0].title || '').slice(0, 50), url: String(q.refs[0].url || '').slice(0, 100) }
+      : null
+  };
+  if (JSON.stringify(snap).length > 600) delete snap.explain;
+  if (JSON.stringify(snap).length > 600) delete snap.reference;
+  if (JSON.stringify(snap).length > 600) {
+    snap.options = snap.options.slice(0, 3).map(o => o.slice(0, 30));
+    snap.keywords = snap.keywords.slice(0, 4);
+  }
+  return snap;
+}
 
 export function openChallenge(nodeId, options = {}) {
   if (active) return;
   const node = nodeById(nodeId);
-  const questions = questionsFor(nodeId);
-  if (!node || !questions.length) {
+  if (!node) return;
+  
+  // 使用自适应题库：随机混合静态题 + 动态变式，每次 5 题
+  const bank = new QuestionBank(nodeId);
+  const questions = bank.getAdaptiveQuestions();
+  
+  if (!questions.length) {
     toast('这个知识点暂时没有可用题目', 'warn');
     return;
   }
@@ -96,6 +128,26 @@ export function openChallenge(nodeId, options = {}) {
     local.phase = 'intro';
     const record = getState().records[node.id];
     const lit = !!getState().lit[node.id];
+    const state = getState();
+    const mistakes = Object.values(state.mistakes || {}).filter(m => m.node === nodeId);
+    const branchGuide = getLearningGuides(nodeId);
+    
+    // 收敛为一行摘要 + 可展开详情
+    const attempts = record?.attempts || 0;
+    const summaryNote = lit
+      ? '这颗星已点亮，重新挑战可以刷新最好成绩。'
+      : '通过后这颗星才会点亮，并计入能力档案。';
+
+    const extraNotes = [
+      `本次 ${questions.length} 道随机题（选择 + 简答），每次组合都不同`,
+      attempts >= 2 ? '题目难度会跟随你的历史表现调整' : '',
+      mistakes.length ? `上次有 ${mistakes.length} 处答错，相关知识点会加重` : '',
+      `总分 ≥ ${threshold} 且所有简答题达标才算通过`
+    ].filter(Boolean);
+
+    const topLearn = branchGuide?.learn?.[0];
+    const topPractice = branchGuide?.practice?.[0];
+
     body.innerHTML = `
       ${headerHtml('能力验证 · ' + (g ? g.name : '知识点'), node.name,
         `<span class="tag" style="color:${color};border-color:${color}66">${g ? g.name : '未分类'}</span>
@@ -106,16 +158,15 @@ export function openChallenge(nodeId, options = {}) {
         <div><b>${record ? record.best : '—'}</b><span>历史最好</span></div>
         <div><b>${record ? record.attempts : 0}</b><span>挑战次数</span></div>
       </div>
-      ${lit ? '<p class="challenge-note good">✦ 这颗星已点亮。重新挑战可以刷新你的最好成绩。</p>'
-            : '<p class="challenge-note">通过挑战后，这颗星才会真正点亮，并计入能力档案。</p>'}
-      <div class="rules">
-        <h3>判分规则</h3>
-        <ul>
-          <li>选择题：答对得满分，答错不得分。</li>
-          <li>简答题：命中关键词达到要求即通过，否则只给少量部分分。</li>
-          <li>总分 ≥ ${threshold} 且所有简答题达标，才算通过。</li>
+      <p class="challenge-summary">${summaryNote}</p>
+      <details class="challenge-more">
+        <summary>规则与准备</summary>
+        <ul class="challenge-list">
+          ${extraNotes.map(n => `<li>${n}</li>`).join('')}
+          <li>选择题答对得满分；简答题命中关键词才算达标。</li>
         </ul>
-      </div>`;
+        ${topLearn ? `<p class="challenge-link">推荐预习：<a href="${topLearn.url || '#'}" target="_blank" rel="noopener">${escapeHtml(topLearn.title)}</a>${topPractice ? ` · 练手：<a href="${topPractice.url || '#'}" target="_blank" rel="noopener">${escapeHtml(topPractice.title)}</a>` : ''}</p>` : ''}
+      </details>`;
     setActions(`
         <button class="btn ghost" data-act="close">稍后再来</button>
         <button class="btn primary" data-act="start">${lit ? '重新挑战' : '开始挑战'}</button>`);
@@ -222,7 +273,11 @@ export function openChallenge(nodeId, options = {}) {
     const alreadyLit = !!state.lit[node.id];
     const wrong = [];
     const rightIds = [];
+    const conceptStats = [];
     details.forEach(d => {
+      if (d.q.conceptId && !String(d.q.conceptId).startsWith('static:')) {
+        conceptStats.push({ conceptId: d.q.conceptId, ok: !!d.ok });
+      }
       if (d.ok) {
         rightIds.push(d.q.id);
       } else {
@@ -230,11 +285,13 @@ export function openChallenge(nodeId, options = {}) {
           qid: d.q.id,
           type: d.q.type,
           chosen: d.q.type === 'choice' ? Number(d.ans) : null,
-          missing: d.missing
+          missing: d.missing,
+          conceptId: d.q.conceptId || null,
+          snapshot: snapshotOf(d.q)
         });
       }
     });
-    const mistakeData = { wrong, rightIds };
+    const mistakeData = { wrong, rightIds, concepts: conceptStats };
     if (passed) passChallenge(node.id, total, mistakeData);
     else failChallenge(node.id, total, mistakeData);
 
@@ -281,6 +338,20 @@ export function openChallenge(nodeId, options = {}) {
     const mistakeNote = !passed
       ? '<p class="challenge-note">答错的题目已记入「我的 → 待复习」，下次可以直接重练这颗星。</p>'
       : '';
+    
+    // 基于知识库的学习建议
+    const branchGuide = getLearningGuides(nodeId);
+    let studyTip = '';
+    if (!passed && branchGuide) {
+      const topLearn = branchGuide.learn?.[0];
+      const topPractice = branchGuide.practice?.[0];
+      studyTip = `<div class="challenge-note good">
+        建议先看：${topLearn ? `<a href="${topLearn.url || '#'}" target="_blank" rel="noopener" style="color:inherit">${escapeHtml(topLearn.title)}</a>` : '核心教材'}
+        ${topPractice ? ` · 练手：<a href="${topPractice.url || '#'}" target="_blank" rel="noopener" style="color:inherit">${escapeHtml(topPractice.title)}</a>` : ''}
+      </div>`;
+    } else if (passed && branchGuide && !alreadyLit) {
+      studyTip = '<div class="challenge-note good">已点亮。知识库中还有进阶方向，可以到「学习指南」查看更多资料。</div>';
+    }
 
     body.innerHTML = `
       <div class="result-hero ${passed ? 'pass' : 'fail'}">
@@ -294,6 +365,7 @@ export function openChallenge(nodeId, options = {}) {
       </div>
       ${shortNote}
       ${mistakeNote}
+      ${studyTip}
       <div class="review-list">${review}</div>`;
     setActions(`
         <button class="btn ghost" data-act="done">${passed ? '回到星图' : '稍后再来'}</button>

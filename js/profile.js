@@ -65,6 +65,20 @@ function buildAdvice(lit, mastery) {
   return parts.join('');
 }
 
+function snapshotQuestion(qid, snap) {
+  if (!snap) return null;
+  return {
+    id: qid,
+    type: snap.type === 'short' ? 'short' : 'choice',
+    stem: snap.stem || '',
+    options: Array.isArray(snap.options) ? snap.options : [],
+    answer: snap.answer,
+    keywords: Array.isArray(snap.keywords) ? snap.keywords : [],
+    reference: snap.reference || '',
+    explain: snap.explain || ''
+  };
+}
+
 function drawRadar(canvas, items) {
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
@@ -252,7 +266,8 @@ export function renderProfile(root, handlers = {}) {
     .map(([qid, m]) => {
       const node = nodeById(m.node);
       if (!node) return null;
-      const q = questionsFor(node.id).find(item => item.id === qid);
+      const q = questionsFor(node.id).find(item => item.id === qid)
+        || snapshotQuestion(qid, m.snapshot);
       if (!q) return null;
       return { qid, m, node, q, g: galaxyOf(node) };
     })

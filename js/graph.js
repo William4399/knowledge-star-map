@@ -11,6 +11,7 @@ let handlers = {};
 let tipEl = null;
 let pointer = { x: 0, y: 0 };
 let graphActive = true;
+let clamping = false;
 
 function starRadius(node) {
   return 2.6 + node.importance * 1.7;
@@ -82,7 +83,11 @@ export function initGraph(el, options = {}) {
     })
     .onBackgroundClick(() => {
       if (handlers.onBackgroundClick) handlers.onBackgroundClick();
-    });
+    })
+    // 力导向引擎约 15 秒后冷却停转，库默认会跳过重绘，导致闪烁/流光/关卡脉冲全部静止
+    .autoPauseRedraw(false)
+    // 限制平移范围，避免把星图拖到空白区域
+    .onZoom(handleViewChange);
 
   // ForceGraph 初始化时会清空容器，浮层必须在其后挂载
   tipEl = document.createElement('div');
@@ -119,12 +124,59 @@ export function initGraph(el, options = {}) {
 
   graph.centerAt(0, 0, 0);
   graph.zoom(initZoom, 0);
+  if (moveListener) moveListener({ cx: 0, cy: 0, k: initZoom });
+}
+
+/* 视角变化（平移/缩放）时通知外部，用于背景视差 */
+let moveListener = null;
+
+export function onGraphMove(fn) {
+  moveListener = fn;
+}
+
+function handleViewChange(t) {
+  clampPan();
+  if (!moveListener || !graph) return;
+  const c = graph.centerAt();
+  if (!c) return;
+  const k = t && typeof t.k === 'number' && t.k > 0 ? t.k : graph.zoom();
+  moveListener({ cx: c.x, cy: c.y, k });
 }
 
 export function resize() {
   if (!graph || !container) return;
   graph.width(container.clientWidth);
   graph.height(container.clientHeight);
+}
+
+/* 平移边界：视野中心限制在节点包围盒 + 少量余量内，避免拖到空白区域 */
+function clampPan() {
+  if (!graph || clamping || !container) return;
+  const W = container.clientWidth;
+  const H = container.clientHeight;
+  if (!W || !H) return;
+
+  const nodes = graph.graphData().nodes;
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  nodes.forEach(n => {
+    if (n.x == null || n.y == null) return;
+    if (n.x < minX) minX = n.x;
+    if (n.x > maxX) maxX = n.x;
+    if (n.y < minY) minY = n.y;
+    if (n.y > maxY) maxY = n.y;
+  });
+  if (minX > maxX) return;
+
+  const margin = 30;
+  const c = graph.centerAt();
+  if (!c) return;
+  const nx = Math.max(minX - margin, Math.min(maxX + margin, c.x));
+  const ny = Math.max(minY - margin, Math.min(maxY + margin, c.y));
+  if (nx === c.x && ny === c.y) return;
+
+  clamping = true;
+  graph.centerAt(nx, ny, 0);
+  clamping = false;
 }
 
 export function resetView() {
@@ -234,8 +286,6 @@ function drawNebulae(ctx, globalScale) {
 
   // 星系名（缩小时显现，无边框）
   if (labelAlpha > 0.02) {
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
     Object.keys(groups).forEach(gid => {
       const g = Data.galaxyById[gid];
       if (!g) return;
@@ -246,20 +296,93 @@ function drawNebulae(ctx, globalScale) {
       cy /= ns.length;
       ns.forEach(n => { spread = Math.max(spread, Math.hypot(n.x - cx, n.y - cy)); });
       const R = Math.min(spread + 105, 230);
-
-      ctx.globalAlpha = labelAlpha * 0.88;
-      ctx.font = `${12 / globalScale}px -apple-system, "PingFang SC", sans-serif`;
-      ctx.fillStyle = hexToRgba(g.color, 0.95);
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
-      ctx.shadowBlur = 6 / globalScale;
-      ctx.fillText(g.name, cx, cy - R * 0.72);
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 1;
+      drawGalaxyTitle(ctx, g, cx, cy, R, globalScale, labelAlpha, hash01(gid));
     });
+    ctx.globalAlpha = 1;
   }
 }
 
+/* ============ 星系名：正文观感 + 流萤 + 规线 ============ */
+const TITLE_CJK_STACK = '"Noto Sans SC Local", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif';
+
+function hash01(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) / 4294967295;
+}
+
+// 流萤：标题四周极淡的漂浮光点，只添气氛，不压字
+function drawTitleMotes(ctx, g, x, y, w, h, scale, alpha, seed) {
+  const t = nowSec();
+  const drift = reduceMotion ? 0 : 0.4;
+  for (let i = 0; i < 4; i++) {
+    const a = seed * TAU + i * 1.73;
+    const px = x + Math.sin(t * drift + a) * (w * 0.5);
+    const py = y + Math.cos(t * drift * 0.78 + a * 1.31) * (h * 0.8);
+    const twinkle = reduceMotion ? 0.18 : 0.18 + 0.14 * Math.sin(t * 1.25 + a * 2.1);
+    const r = (1 + (i % 3) * 0.35) / scale;
+    ctx.fillStyle = g.color;
+    ctx.globalAlpha = Math.max(0, alpha * twinkle * 0.26);
+    ctx.beginPath();
+    ctx.arc(px, py, r * 3.4, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = Math.max(0, alpha * twinkle);
+    ctx.beginPath();
+    ctx.arc(px, py, r, 0, TAU);
+    ctx.fill();
+  }
+}
+
+function drawGalaxyTitle(ctx, g, cx, cy, R, scale, alpha, seed) {
+  const t = nowSec();
+  const supported = 'letterSpacing' in ctx;
+  const size = 14 / scale;
+  const track = supported ? size * 0.06 : 0;
+  const off = g.labelOff || [0, -0.72];
+  const x = cx + R * off[0];
+  const y = cy + R * off[1];
+  const breathe = reduceMotion ? 1 : 1 - 0.06 * (0.5 + 0.5 * Math.sin(t * 0.6 + seed * TAU));
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = `400 ${size}px ${TITLE_CJK_STACK}`;
+  if (supported) ctx.letterSpacing = `${track}px`;
+  const w = ctx.measureText(g.name).width - track;
+  const yRule = y + size * 0.34 + 5.5 / scale;
+
+  // 流萤先画，避免盖在字上
+  drawTitleMotes(ctx, g, x, (y + yRule) / 2, w + 26 / scale, size + 14 / scale, scale, alpha, seed);
+
+  ctx.globalAlpha = alpha * 0.9 * breathe;
+  ctx.fillStyle = hexToRgba(g.color, 0.95);
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+  ctx.shadowBlur = 7 / scale;
+  ctx.fillText(g.name, x - w / 2, y);
+  ctx.shadowBlur = 0;
+  if (supported) ctx.letterSpacing = '0px';
+
+  // 规线：1px，两端渐隐，长度随标题宽度
+  const half = w / 2 + 6 / scale;
+  const grad = ctx.createLinearGradient(x - half, 0, x + half, 0);
+  grad.addColorStop(0, hexToRgba(g.color, 0));
+  grad.addColorStop(0.5, hexToRgba(g.color, alpha * 0.5));
+  grad.addColorStop(1, hexToRgba(g.color, 0));
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 1 / scale;
+  ctx.beginPath();
+  ctx.moveTo(x - half, yRule);
+  ctx.lineTo(x + half, yRule);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
 /* ============ 星星（柔光 + 弧光 + 星核） ============ */
+const UNLIT_COLOR = '#74839b';
+
 function drawStarNode(node, ctx, globalScale) {
   const r = starRadius(node);
   const g = galaxyOf(node);
@@ -267,44 +390,69 @@ function drawStarNode(node, ctx, globalScale) {
   const lit = isLit(node.id);
   const claimed = isClaimed(node.id);
   const recommended = highlight.has(node.id) && !lit;
+  const unlit = !lit && !claimed;
 
   const t = nowSec();
-  const twinkle = reduceMotion ? 0.92 : 0.74 + 0.26 * Math.sin(t * node.tSpeed + node.phase);
   const hovered = hoveredNode && hoveredNode.id === node.id;
-  const baseIntensity = lit ? 1.15 : claimed ? 0.68 : 0.42;
-  const intensity = twinkle * baseIntensity * (hovered ? 1.7 : 1);
+
+  // 未点亮：灰色微光，缓慢呼吸；已点亮为有色强光
+  let drawColor, intensity, twinkle;
+  if (unlit) {
+    drawColor = UNLIT_COLOR;
+    twinkle = reduceMotion ? 0.5 : 0.5 + 0.5 * Math.sin(t * 0.75 + node.phase);
+    intensity = (0.3 + 0.22 * twinkle) * (hovered ? 1.5 : 1);
+  } else {
+    drawColor = galaxyColor;
+    twinkle = reduceMotion ? 0.92 : 0.74 + 0.26 * Math.sin(t * node.tSpeed + node.phase);
+    const baseIntensity = lit ? 1.15 : claimed ? 0.52 : 0.42;
+    intensity = twinkle * baseIntensity * (hovered ? 1.7 : 1);
+  }
 
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
 
-  // 大范围柔光
-  const glowR = r * (hovered ? 7 : 5.6);
+  // 大范围柔光（未点亮时大幅减弱）
+  const glowR = r * (hovered ? 7 : unlit ? 3.2 : 5.6);
   const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowR);
-  glow.addColorStop(0, hexToRgba(galaxyColor, 0.62 * intensity));
-  glow.addColorStop(0.22, hexToRgba(galaxyColor, 0.24 * intensity));
-  glow.addColorStop(0.55, hexToRgba(galaxyColor, 0.07 * intensity));
-  glow.addColorStop(1, hexToRgba(galaxyColor, 0));
+  glow.addColorStop(0, hexToRgba(drawColor, (unlit ? 0.18 : 0.62) * intensity));
+  glow.addColorStop(0.22, hexToRgba(drawColor, (unlit ? 0.06 : 0.24) * intensity));
+  glow.addColorStop(0.55, hexToRgba(drawColor, (unlit ? 0.015 : 0.07) * intensity));
+  glow.addColorStop(1, hexToRgba(drawColor, 0));
   ctx.fillStyle = glow;
   ctx.beginPath();
   ctx.arc(node.x, node.y, glowR, 0, TAU);
   ctx.fill();
 
-  // 弧光：两道拉长的光弧
-  drawFlare(ctx, node.x, node.y, r * 7.5, 0, galaxyColor, 0.5 * intensity);
-  drawFlare(ctx, node.x, node.y, r * 6.2, Math.PI / 2, galaxyColor, 0.3 * intensity);
+  // 弧光：未点亮时不画
+  if (!unlit) {
+    drawFlare(ctx, node.x, node.y, r * 7.5, 0, drawColor, 0.5 * intensity);
+    drawFlare(ctx, node.x, node.y, r * 6.2, Math.PI / 2, drawColor, 0.3 * intensity);
+  }
 
-  // 星核
+  // 星核：已点亮为实心亮核；待点亮为空心环，避免与已点亮混淆
   ctx.beginPath();
   ctx.arc(node.x, node.y, r * 1.25, 0, TAU);
-  ctx.fillStyle = hexToRgba(galaxyColor, 0.55 * intensity);
+  ctx.fillStyle = hexToRgba(drawColor, (unlit ? 0.24 : 0.55) * intensity);
   ctx.fill();
 
-  ctx.beginPath();
-  ctx.arc(node.x, node.y, r * 0.6, 0, TAU);
-  ctx.fillStyle = `rgba(255,255,255,${(lit ? 0.92 : claimed ? 0.68 : 0.5) * (0.8 + 0.2 * twinkle)})`;
-  ctx.fill();
+  if (claimed && !lit) {
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, r * 0.62, 0, TAU);
+    ctx.strokeStyle = hexToRgba(galaxyColor, 0.85);
+    ctx.lineWidth = 1.3 / globalScale;
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, r * 0.6, 0, TAU);
+    if (unlit) {
+      ctx.fillStyle = `rgba(190,205,225,${0.16 + 0.3 * twinkle})`;
+    } else {
+      ctx.fillStyle = `rgba(255,255,255,${(lit ? 0.92 : 0.5) * (0.8 + 0.2 * twinkle)})`;
+    }
+    ctx.fill();
+  }
 
-  // 已点亮：一圈淡色星环
+  // 已点亮：实线星环，强化"已完成"的稳定感
   if (lit) {
     ctx.beginPath();
     ctx.arc(node.x, node.y, r * 1.95, 0, TAU);
@@ -313,30 +461,72 @@ function drawStarNode(node, ctx, globalScale) {
     ctx.stroke();
   }
 
-  // 自评掌握：待验证的细环
-  if (claimed) {
+  // 待点亮（自评待验证）：虚线细环 + 空心核，与实心已点亮区分
+  if (claimed && !lit) {
     ctx.beginPath();
-    ctx.arc(node.x, node.y, r * 1.55, 0, TAU);
-    ctx.strokeStyle = hexToRgba(galaxyColor, 0.2);
-    ctx.lineWidth = 0.6 / globalScale;
+    ctx.arc(node.x, node.y, r * 1.75, 0, TAU);
+    ctx.setLineDash([2.4 / globalScale, 3.4 / globalScale]);
+    ctx.strokeStyle = hexToRgba(galaxyColor, 0.45);
+    ctx.lineWidth = 0.9 / globalScale;
     ctx.stroke();
+    ctx.setLineDash([]);
   }
 
-  // 推荐路径：呼吸光圈
+  // 推荐路径：呼吸光圈 + 黄色闪烁边框（游戏化关卡提示）
   if (recommended) {
-    const pulse = reduceMotion ? 0.55 : 0.5 + 0.5 * Math.sin(t * 1.8 + node.phase);
+    const pulse = reduceMotion ? 0.55 : 0.5 + 0.5 * Math.sin(t * 2.2 + node.phase * 2);
+    const yellow = '#ffc94a';
+    
+    // 外圈发光（黄色光晕）
     ctx.beginPath();
-    ctx.arc(node.x, node.y, r * (2.5 + pulse * 0.7), 0, TAU);
-    ctx.strokeStyle = hexToRgba(galaxyColor, 0.22 + pulse * 0.3);
-    ctx.lineWidth = 1.1 / globalScale;
+    ctx.arc(node.x, node.y, r * (3.2 + pulse * 0.6), 0, TAU);
+    ctx.strokeStyle = `rgba(255, 201, 74, ${0.25 + pulse * 0.25})`;
+    ctx.lineWidth = (1.5 + pulse * 0.8) / globalScale;
     ctx.stroke();
+    
+    // 第二层脉动边框（更接近星星）
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, r * (2.1 + pulse * 0.35), 0, TAU);
+    ctx.strokeStyle = `rgba(255, 201, 74, ${0.35 + pulse * 0.45})`;
+    ctx.lineWidth = (1.0 + pulse * 0.6) / globalScale;
+    ctx.stroke();
+    
+    // 黄色外圈光晕（lighter 混合，发光感）
+    ctx.globalCompositeOperation = 'lighter';
+    const haloR = r * (4.5 + pulse * 1.2);
+    const halo = ctx.createRadialGradient(node.x, node.y, r * 1.5, node.x, node.y, haloR);
+    halo.addColorStop(0, `rgba(255, 201, 74, ${0.2 + pulse * 0.15})`);
+    halo.addColorStop(0.5, `rgba(255, 201, 74, ${0.08 + pulse * 0.06})`);
+    halo.addColorStop(1, 'rgba(255, 201, 74, 0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, haloR, 0, TAU);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    
+    // 旋转的角标光环（虚线边框绕着转）
+    if (!reduceMotion) {
+      const rot = t * 0.6 + node.phase;
+      ctx.save();
+      ctx.translate(node.x, node.y);
+      ctx.rotate(rot);
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 2.6, 0, TAU);
+      ctx.setLineDash([3 / globalScale, 5 / globalScale]);
+      ctx.lineDashOffset = -rot * 10;
+      ctx.strokeStyle = `rgba(255, 220, 120, ${0.35 + pulse * 0.3})`;
+      ctx.lineWidth = 0.8 / globalScale;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
   }
 
-  // 悬停光圈
+  // 悬停光圈（hovered 时始终用原星系色提示）
   if (hovered) {
     ctx.beginPath();
     ctx.arc(node.x, node.y, r * 2.4, 0, TAU);
-    ctx.strokeStyle = hexToRgba(galaxyColor, 0.5);
+    ctx.strokeStyle = hexToRgba(galaxyColor, 0.55);
     ctx.lineWidth = 0.9 / globalScale;
     ctx.stroke();
   }
@@ -347,12 +537,12 @@ function drawStarNode(node, ctx, globalScale) {
   const labelAlpha = hovered ? 1 : nodeLabelAlpha(globalScale, node);
   if (labelAlpha > 0.02) {
     ctx.globalAlpha = labelAlpha;
-    ctx.font = `${(10 + node.importance * 0.8) / globalScale}px -apple-system, "PingFang SC", sans-serif`;
+    ctx.font = `${(10 + node.importance * 0.8) / globalScale}px "Poppins", -apple-system, "PingFang SC", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.shadowColor = 'rgba(0,0,0,0.85)';
     ctx.shadowBlur = 4 / globalScale;
-    ctx.fillStyle = lit ? 'rgba(242,250,255,0.95)' : claimed ? 'rgba(214,228,246,0.82)' : 'rgba(186,200,222,0.7)';
+    ctx.fillStyle = lit ? 'rgba(242,250,255,0.95)' : claimed ? 'rgba(214,228,246,0.82)' : 'rgba(160,175,195,0.65)';
     ctx.fillText(node.name, node.x, node.y + r * 1.9 + 3 / globalScale);
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
@@ -394,42 +584,45 @@ function drawLink(link, ctx, globalScale) {
   const tg = galaxyOf(t);
   const color = tg ? tg.color : '#9dc7ff';
   const isPrereq = link.type === 'prerequisite';
-  const baseAlpha = isPrereq ? 0.1 : 0.055;
-  const flowAlpha = isPrereq ? 0.42 : 0.24;
+  const baseAlpha = isPrereq ? 0.14 : 0.08;
+  const flowAlpha = isPrereq ? 0.6 : 0.38;
 
+  // 基底线（加粗一点点）
   ctx.beginPath();
   ctx.moveTo(s.x, s.y);
   ctx.lineTo(t.x, t.y);
   ctx.strokeStyle = hexToRgba(color, baseAlpha);
-  ctx.lineWidth = (isPrereq ? 0.85 : 0.6) / globalScale;
+  ctx.lineWidth = (isPrereq ? 1.15 : 0.85) / globalScale;
   ctx.stroke();
 
   if (reduceMotion) return;
 
   const len = Math.hypot(t.x - s.x, t.y - s.y);
   if (len < 1) return;
-  const dash = Math.min(16, len * 0.14);
-  const gap = Math.max(70, len * 0.85);
+  const dash = Math.min(22, len * 0.18);
+  const gap = Math.max(55, len * 0.72);
   const period = dash + gap;
   const off = (performance.now() * 0.05 + link.seed) % period;
 
+  // 流光虚线（更粗更亮）
   ctx.beginPath();
   ctx.moveTo(s.x, s.y);
   ctx.lineTo(t.x, t.y);
   ctx.setLineDash([dash, gap]);
   ctx.lineDashOffset = -off;
   ctx.strokeStyle = hexToRgba(color, flowAlpha);
-  ctx.lineWidth = (isPrereq ? 1.0 : 0.75) / globalScale;
+  ctx.lineWidth = (isPrereq ? 1.45 : 1.05) / globalScale;
   ctx.stroke();
   ctx.setLineDash([]);
 
-  const p = (performance.now() * 0.0001 * link.speed + link.seed / 200) % 1;
+  // 流光光点（更大更亮）
+  const p = (performance.now() * 0.00012 * link.speed + link.seed / 200) % 1;
   const px = s.x + (t.x - s.x) * p;
   const py = s.y + (t.y - s.y) * p;
-  const dotR = isPrereq ? 3.6 : 2.6;
+  const dotR = isPrereq ? 5.0 : 3.8;
   const dg = ctx.createRadialGradient(px, py, 0, px, py, dotR);
-  dg.addColorStop(0, hexToRgba(color, isPrereq ? 0.9 : 0.55));
-  dg.addColorStop(0.35, hexToRgba(color, isPrereq ? 0.32 : 0.18));
+  dg.addColorStop(0, hexToRgba(color, isPrereq ? 1.0 : 0.8));
+  dg.addColorStop(0.35, hexToRgba(color, isPrereq ? 0.45 : 0.3));
   dg.addColorStop(1, hexToRgba(color, 0));
   ctx.fillStyle = dg;
   ctx.beginPath();

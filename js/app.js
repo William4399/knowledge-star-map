@@ -1,5 +1,5 @@
 import {
-  loadData, Data, nodeById, galaxyOf, hardPrereqs, unlocked, questionsFor
+  loadData, Data, nodeById, galaxyOf, hardPrereqs, unlocked
 } from './data.js';
 import {
   load, getState, subscribe, isLit, isClaimed, unlightNode, setDirection, setHighlight
@@ -7,7 +7,7 @@ import {
 import { initBackground, setBackgroundActive } from './background.js';
 import {
   initGraph, resetView, focusNode, setHighlight as setGraphHighlight,
-  resize as resizeGraph, setGraphActive
+  resize as resizeGraph, setGraphActive, onGraphMove
 } from './graph.js';
 import { openChallenge } from './challenge.js';
 import { buildPlan, renderPath } from './path.js';
@@ -17,6 +17,7 @@ import { openShareCard } from './sharecard.js';
 import { openOnboarding } from './onboarding.js';
 import { openNodeList } from './nodelist.js';
 import { escapeHtml, toast, confirmDialog } from './util.js';
+import { loadKnowledgeBase, getLearningGuides, QuestionBank, CHALLENGE_SIZE } from './kb.js';
 
 const views = {
   graph: document.getElementById('view-graph'),
@@ -28,7 +29,9 @@ const pathRoot = document.getElementById('path-root');
 const planRoot = document.getElementById('plan-root');
 const profileRoot = document.getElementById('profile-root');
 const detail = document.getElementById('detail');
+const detailHead = document.getElementById('detail-head');
 const detailContent = document.getElementById('detail-content');
+const detailFoot = document.getElementById('detail-foot');
 const statusBar = document.getElementById('status');
 const directionChip = document.getElementById('direction-chip');
 const highlightBtn = document.getElementById('toggle-highlight');
@@ -39,6 +42,31 @@ const passThreshold = () => Data.questionMeta.pass_threshold || 60;
 let currentView = 'graph';
 let selectedId = null;
 let autoOnboardingOpened = false;
+let spaceApi = null;
+
+let nebulaApi = null;
+
+/* WebGL 星空可用时优先使用，否则回退到 canvas 星空 */
+function setBgActive(active) {
+  if (spaceApi) spaceApi.setSpaceActive(active);
+  else setBackgroundActive(active);
+  if (nebulaApi) nebulaApi.setNebulaFxActive(active);
+}
+
+/* 背景视差：星图平移时背景按比例跟随，缩放时轻微放大，让背景与星图连成一体 */
+let fxLayer = null;
+let bgBase = null;
+
+function updateBgParallax({ cx, cy, k }) {
+  if (!fxLayer) fxLayer = document.getElementById('nebula-fx');
+  if (!fxLayer) return;
+  if (!bgBase) bgBase = { cx, cy, k };
+  const PAN = 0.14;
+  const scale = Math.min(1.3, Math.max(1, Math.pow(k / bgBase.k, 0.32)));
+  const tx = -(cx - bgBase.cx) * k * PAN;
+  const ty = -(cy - bgBase.cy) * k * PAN;
+  fxLayer.style.transform = `translate3d(${tx.toFixed(1)}px, ${ty.toFixed(1)}px, 0) scale(${scale.toFixed(3)})`;
+}
 
 /* ============ 视图切换 ============ */
 function setView(name, opts = {}) {
@@ -65,7 +93,7 @@ function setView(name, opts = {}) {
   // 非星图视图或页面隐藏时停掉星图与背景动画，省电降耗
   const animate = name === 'graph' && !document.hidden;
   setGraphActive(animate);
-  setBackgroundActive(animate);
+  setBgActive(animate);
 
   if (name === 'graph') {
     updateHighlight();
@@ -131,7 +159,7 @@ function wireNav() {
   document.addEventListener('visibilitychange', () => {
     const animate = !document.hidden && currentView === 'graph';
     setGraphActive(animate);
-    setBackgroundActive(animate);
+    setBgActive(animate);
   });
 
   highlightBtn.addEventListener('click', () => {
@@ -174,65 +202,116 @@ function openDetail(id) {
   const prereqIds = hardPrereqs(id);
   const anyOf = node.any_of || [];
   const record = getState().records[id];
-  const qs = questionsFor(id);
+  const templateCount = getLearningGuides(id)?.questionTemplates?.length || 0;
+  
+  // 知识库信息
+  const guide = getLearningGuides(id);
 
   let prereqHtml = '';
-  if (prereqIds.length) {
-    prereqHtml += `<div class="section-title">前置依赖</div><div class="chips">${chipHtml(prereqIds)}</div>`;
-  }
-  if (anyOf.length) {
-    prereqHtml += `<div class="section-title">任一即可</div><div class="chips">${chipHtml(anyOf)}</div>`;
-  }
-  if (!prereqIds.length && !anyOf.length) {
-    prereqHtml = `<div class="section-title">前置依赖</div><div class="chips"><span class="done">★ 起点星</span></div>`;
+  if (prereqIds.length || anyOf.length) {
+    prereqHtml = `
+      <div class="detail-section">
+        <div class="detail-label">前置依赖</div>
+        ${prereqIds.length ? `<div class="chips">${chipHtml(prereqIds)}</div>` : ''}
+        ${anyOf.length ? `<div class="chips gap"><span class="chips-label">任一即可</span>${chipHtml(anyOf)}</div>` : ''}
+      </div>`;
+  } else {
+    prereqHtml = `
+      <div class="detail-section">
+        <div class="detail-label">前置依赖</div>
+        <div class="chips"><span class="done">起点星 · 无前置</span></div>
+      </div>`;
   }
 
-  const resourcesHtml = (node.resources && node.resources.length)
+  // 原有资源 + 知识库资源合并
+  const existingResources = (node.resources && node.resources.length)
     ? node.resources.map(r => r.url
-      ? `<a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">✦ ${escapeHtml(r.title)}</a>`
-      : `<div class="resource">✦ ${escapeHtml(r.title)}</div>`).join('')
-    : '<div class="resource muted">暂未收录学习资源</div>';
+      ? `<a href="${escapeHtml(r.url)}" target="_blank" rel="noopener"><i class="res-mark" aria-hidden="true"></i><span>${escapeHtml(r.title)}</span></a>`
+      : `<div class="resource"><i class="res-mark" aria-hidden="true"></i><span>${escapeHtml(r.title)}</span></div>`).join('')
+    : '';
+    
+  const learnRefs = guide?.learn || [];
+  const practiceRefs = guide?.practice || [];
+  
+  let resourcesHtml = existingResources || '<div class="resource muted">暂未收录学习资源</div>';
+  if (learnRefs.length) {
+    resourcesHtml += `<div class="section-title" style="margin-top:12px">推荐学习</div>`;
+    resourcesHtml += learnRefs.map(r => 
+      `<a href="${escapeHtml(r.url || '#')}" target="_blank" rel="noopener" class="kb-resource"><i class="res-mark" aria-hidden="true"></i><span>${escapeHtml(r.title)}</span></a>`
+    ).join('');
+  }
+  if (practiceRefs.length) {
+    resourcesHtml += `<div class="section-title" style="margin-top:12px">练习平台</div>`;
+    resourcesHtml += practiceRefs.map(r => 
+      `<a href="${escapeHtml(r.url || '#')}" target="_blank" rel="noopener" class="kb-resource"><i class="res-mark" aria-hidden="true"></i><span>${escapeHtml(r.title)}</span></a>`
+    ).join('');
+  }
 
   const threshold = passThreshold();
-  let actionHtml = '';
+  
+  // 题量以 CHALLENGE_SIZE 为唯一来源，避免与挑战弹窗不一致
+  
+  /* ---- 吸底行动区：一个主行动 + 可选次级文字按钮 ---- */
+  let footHtml = '';
   if (lit) {
-    actionHtml = `
-      <div class="state-line">✦ 已点亮${record ? ` · 最好 ${record.best} 分` : ''}</div>
-      <button class="btn-light" data-act="challenge" data-id="${id}">重新挑战</button>
-      <button class="btn-challenge" data-act="unlight" data-id="${id}">撤销点亮</button>`;
+    footHtml = `
+      <p class="detail-state">✦ 已点亮${record ? ` · 最好 ${record.best} 分` : ''}</p>
+      <button class="detail-cta" data-act="challenge" data-id="${id}">重新挑战</button>
+      <button class="detail-link" data-act="unlight" data-id="${id}">撤销点亮</button>`;
   } else if (ready) {
-    actionHtml = `
-      ${claimed ? '<p class="claimed-note">自评已了解，等待一次客观验证。</p>' : ''}
-      <button class="btn-light" data-act="challenge" data-id="${id}">发起挑战</button>
-      <p class="action-sub">共 ${qs.length} 题 · ${threshold} 分及格 · 通过后点亮</p>`;
+    footHtml = `
+      ${claimed ? '<p class="detail-note">自评已了解，等待一次客观验证。</p>' : ''}
+      <button class="detail-cta" data-act="challenge" data-id="${id}">开始挑战</button>
+      <p class="detail-sub">${CHALLENGE_SIZE} 题 · ${threshold} 分及格 · 通过后点亮</p>`;
   } else {
     const missing = prereqIds.filter(pid => !isLit(pid)).map(pid => nodeById(pid)?.name || pid);
     const tip = missing.length
-      ? `尚未点亮：${missing.map(escapeHtml).join('、')}`
+      ? `还需点亮：${missing.map(escapeHtml).join('、')}`
       : `需先掌握任一门：${anyOf.map(pid => nodeById(pid)?.name || pid).map(escapeHtml).join(' / ')}`;
-    actionHtml = `<button class="btn-light" disabled>✦ ${tip}</button>
-      <p class="action-sub">前置条件满足后即可发起挑战</p>`;
+    footHtml = `
+      <button class="detail-cta" disabled>前置未满足</button>
+      <p class="detail-sub">${tip}</p>`;
+  }
+  
+  // 可考方向（收敛为一行标签，不再解释）
+  let templatesHtml = '';
+  if (templateCount) {
+    templatesHtml = `
+      <div class="detail-section">
+        <div class="detail-label">可考方向 <em>${templateCount} 个模板</em></div>
+        <div class="kb-templates">
+          ${guide.questionTemplates.slice(0, 4).map(t => `<span class="kb-template-tag">${escapeHtml(t)}</span>`).join('')}
+          ${templateCount > 4 ? `<span class="kb-template-more">+${templateCount - 4}</span>` : ''}
+        </div>
+      </div>`;
   }
 
-  const scrollTop = detail.scrollTop;
-  detailContent.innerHTML = `
+  detailHead.innerHTML = `
     <h2>${escapeHtml(node.name)}</h2>
-    <div class="tags">
-      <span class="galaxy-tag" style="color:${color}">${escapeHtml(g ? g.name : '未分类')}${g && g.ka ? ' · ' + escapeHtml(g.ka) : ''}</span>
-      ${node.core ? '<span class="domain-tag" style="color:#6ce7a8">核心</span>' : ''}
-      ${lit ? '<span class="domain-tag" style="color:#6ce7a8">已点亮</span>' : claimed ? '<span class="domain-tag" style="color:#c8b48a">待验证</span>' : ''}
+    <div class="detail-tags">
+      <span class="detail-tag" style="color:${color};border-color:${color}55">${escapeHtml(g ? g.name : '未分类')}</span>
+      ${lit ? '<span class="detail-tag is-lit">已点亮</span>'
+        : claimed ? '<span class="detail-tag is-claimed">待验证</span>'
+        : '<span class="detail-tag">未点亮</span>'}
+    </div>`;
+
+  detailContent.innerHTML = `
+    <div class="detail-metrics">
+      <div><span>重要度</span><b>${node.importance} / 5</b></div>
+      <div><span>难度</span><b>${node.complexity} / 5</b></div>
+      <div><span>题量</span><b>${CHALLENGE_SIZE} 题</b></div>
     </div>
-    <div class="section-title">重要度 <em>${node.importance} / 5</em></div>
-    <div class="bar">${Array(node.importance).fill('<span class="filled"></span>').join('')}${Array(5 - node.importance).fill('<span></span>').join('')}</div>
-    <div class="section-title">学习难度 <em>${node.complexity} / 5</em></div>
-    <div class="bar difficulty">${Array(node.complexity).fill('<span class="filled"></span>').join('')}${Array(5 - node.complexity).fill('<span></span>').join('')}</div>
     <p class="desc">${escapeHtml(node.description)}</p>
     ${prereqHtml}
-    <div class="section-title">学习资源</div>
-    <div class="resources">${resourcesHtml}</div>
-    ${actionHtml}`;
+    ${templatesHtml}
+    <div class="detail-section">
+      <div class="detail-label">学习资源</div>
+      <div class="resources">${resourcesHtml}</div>
+    </div>`;
+
+  detailFoot.innerHTML = footHtml;
   detail.classList.add('show');
-  detail.scrollTop = scrollTop;
+  detailContent.scrollTop = 0;
 }
 
 function closeDetail() {
@@ -293,7 +372,8 @@ function updateHighlight() {
     setGraphHighlight([]);
   } else {
     const plan = buildPlan();
-    setGraphHighlight(plan.ready.slice(0, 6).map(item => item.node.id));
+    // 只高亮最近的下一关，避免整张图都在发光
+    setGraphHighlight(plan.ready.slice(0, 1).map(item => item.node.id));
   }
   highlightBtn.textContent = state.settings.highlight ? '推荐高亮 · 开' : '推荐高亮 · 关';
   highlightBtn.setAttribute('aria-pressed', state.settings.highlight ? 'true' : 'false');
@@ -495,15 +575,36 @@ async function boot() {
   load();
   registerServiceWorker();
   try {
-    await loadData();
+    await Promise.all([loadData(), loadKnowledgeBase()]);
   } catch (err) {
     console.error(err);
     showBootError(err.message || '数据加载失败');
     return;
   }
 
-  initBackground();
+  // 背景优先用 WebGL 星空；加载失败或 WebGL 不可用时回退到原来的 canvas 星空
   try {
+    const mod = await import('./space.js');
+    if (mod.initSpace(document.getElementById('space-bg'))) {
+      spaceApi = mod;
+      document.getElementById('starfield')?.remove();
+    }
+  } catch (err) {
+    console.warn('WebGL 星空初始化失败，回退 canvas 星空', err);
+  }
+  if (!spaceApi) initBackground();
+
+  // 程序化星云层：WebGL 不可用时保留纯星空
+  try {
+    const nb = await import('./nebula.js');
+    nebulaApi = nb.initNebulaFx(document.getElementById('nebula-fx'));
+    if (nebulaApi) nebulaApi.setNebulaFxActive(currentView === 'graph' && !document.hidden);
+  } catch (err) {
+    console.warn('程序化星云初始化失败，继续使用星空背景', err);
+  }
+
+  try {
+    onGraphMove(updateBgParallax);
     initGraph(document.getElementById('graph-container'), {
       onSelectNode: id => openDetail(id),
       onBackgroundClick: closeDetail

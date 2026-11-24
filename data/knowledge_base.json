@@ -1,0 +1,1979 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generated_at": "2026-11-24",
+    "source_doc": "知识星图·软件工程能力图谱（ACM/IEEE CS2023 + SWEBOK v4）",
+    "total_branches": 52,
+    "categories": [
+      {
+        "id": "1",
+        "name": "编程语言",
+        "cat_en": "SDF/FPL",
+        "branch_count": 5
+      },
+      {
+        "id": "2",
+        "name": "数据结构与算法",
+        "cat_en": "AL",
+        "branch_count": 8
+      },
+      {
+        "id": "3",
+        "name": "计算机系统",
+        "cat_en": "AR/OS",
+        "branch_count": 5
+      },
+      {
+        "id": "4",
+        "name": "网络与Web",
+        "cat_en": "NC",
+        "branch_count": 4
+      },
+      {
+        "id": "5",
+        "name": "后端与架构",
+        "cat_en": "SWEBOK-架构",
+        "branch_count": 5
+      },
+      {
+        "id": "6",
+        "name": "数据与存储",
+        "cat_en": "DM",
+        "branch_count": 5
+      },
+      {
+        "id": "7",
+        "name": "软件工程",
+        "cat_en": "SWEBOK-需求/测试",
+        "branch_count": 3
+      },
+      {
+        "id": "8",
+        "name": "工程实践",
+        "cat_en": "SWEBOK-CM",
+        "branch_count": 5
+      },
+      {
+        "id": "9",
+        "name": "人工智能",
+        "cat_en": "AI",
+        "branch_count": 6
+      },
+      {
+        "id": "10",
+        "name": "数学基础",
+        "cat_en": "MSF",
+        "branch_count": 3
+      },
+      {
+        "id": "11",
+        "name": "安全基础",
+        "cat_en": "SEC",
+        "branch_count": 3
+      }
+    ],
+    "usage_prompt_example": "# 使用示例 Prompt\n从 knowledge_base.json 中筛选 importance >= 4 且 difficulty >= 3 的核心分支，\n为每个分支生成 2 道题目（附难度标签、参考答案），\n出题风格参考该分支 question_templates 字段，\n避免与已有题库重复。"
+  },
+  "branches": [
+    {
+      "id": "1.1",
+      "cat": "编程语言",
+      "cat_en": "SDF/FPL",
+      "name": "C语言",
+      "core": true,
+      "importance": 5,
+      "difficulty": 3,
+      "desc": "指针、内存布局、编译链接，理解操作系统与硬件的钥匙",
+      "learn_refs": [
+        {
+          "title": "Learn C the Hard Way（免费全书）",
+          "url": "https://learncodethehardway.org/c/"
+        },
+        {
+          "title": "浙大翁恺 C 语言 MOOC",
+          "url": "https://www.icourse163.org/course/ZJU-199001"
+        },
+        {
+          "title": "小林 coding 图解系统（C 语言指针）",
+          "url": "https://xiaolincoding.com/os/"
+        },
+        {
+          "title": "CppReference C 部分",
+          "url": "https://en.cppreference.com/w/c"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "Pintia 拼题 A（浙大配套 OJ）",
+          "url": "https://pintia.cn/"
+        },
+        {
+          "title": "洛谷 C 语言标签",
+          "url": "https://www.luogu.com.cn/"
+        },
+        {
+          "title": "LeetCode 选 C 提交",
+          "url": "https://leetcode.cn/problems/"
+        }
+      ],
+      "question_templates": [
+        "指针与数组",
+        "结构体与内存对齐",
+        "动态内存管理 malloc/free",
+        "文件操作 fopen/fread",
+        "预处理宏与条件编译"
+      ]
+    },
+    {
+      "id": "1.2",
+      "cat": "编程语言",
+      "cat_en": "SDF/FPL",
+      "name": "Python",
+      "core": true,
+      "importance": 5,
+      "difficulty": 2,
+      "desc": "语法简洁，算法练习、数据处理与 AI 的首选入门语言",
+      "learn_refs": [
+        {
+          "title": "Python 官方中文教程 3.14",
+          "url": "https://docs.python.org/zh-cn/3/tutorial/"
+        },
+        {
+          "title": "Python 标准库参考",
+          "url": "https://docs.python.org/zh-cn/3/library/"
+        },
+        {
+          "title": "Automate the Boring Stuff（免费在线书）",
+          "url": "https://automatetheboringstuff.com/"
+        },
+        {
+          "title": "北理工 Python MOOC",
+          "url": "https://www.icourse163.org/course/BIT-268001"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "Python Tutor 可视化调试",
+          "url": "https://pythontutor.com/"
+        },
+        {
+          "title": "Edabit 入门 Python 练习",
+          "url": "https://edabit.com/"
+        },
+        {
+          "title": "LeetCode 选 Python 提交",
+          "url": "https://leetcode.cn/"
+        }
+      ],
+      "question_templates": [
+        "列表推导式 vs map/filter",
+        "装饰器原理与自定义",
+        "with 上下文管理器实现",
+        "生成器与迭代器区别",
+        "GIL 全局解释器锁"
+      ]
+    },
+    {
+      "id": "1.3",
+      "cat": "编程语言",
+      "cat_en": "SDF/FPL",
+      "name": "C++",
+      "core": true,
+      "importance": 4,
+      "difficulty": 4,
+      "desc": "面向对象 + 泛型 + RAII，高性能与系统软件的主力语言",
+      "learn_refs": [
+        {
+          "title": "LearnCpp.com（免费全教程）",
+          "url": "https://www.learncpp.com/"
+        },
+        {
+          "title": "CppReference 权威参考",
+          "url": "https://en.cppreference.com/"
+        },
+        {
+          "title": "北大郭炜 C++ MOOC",
+          "url": "https://www.icourse163.org/course/PKU-1001553023"
+        },
+        {
+          "title": "Compiler Explorer (godbolt)",
+          "url": "https://godbolt.org/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "洛谷 C++ 专题",
+          "url": "https://www.luogu.com.cn/"
+        },
+        {
+          "title": "Codeforces",
+          "url": "https://codeforces.com/"
+        },
+        {
+          "title": "LeetCode C++ 提交",
+          "url": "https://leetcode.cn/"
+        }
+      ],
+      "question_templates": [
+        "RAII 与智能指针",
+        "虚函数与多态实现（vptr/vtable）",
+        "模板特化与 SFINAE",
+        "右值引用与移动语义",
+        "内存泄漏检测与 valgrind"
+      ]
+    },
+    {
+      "id": "1.4",
+      "cat": "编程语言",
+      "cat_en": "SDF/FPL",
+      "name": "Java",
+      "core": true,
+      "importance": 4,
+      "difficulty": 3,
+      "desc": "JVM、垃圾回收、企业级后端生态",
+      "learn_refs": [
+        {
+          "title": "Oracle 官方 Java 教程",
+          "url": "https://docs.oracle.com/javase/tutorial/"
+        },
+        {
+          "title": "赫尔辛基大学 Java MOOC（免费自动批改）",
+          "url": "https://java-programming.mooc.fi/"
+        },
+        {
+          "title": "小林 coding Java 面试题",
+          "url": "https://xiaolincoding.com/interview/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "LeetCode Java 提交",
+          "url": "https://leetcode.cn/"
+        },
+        {
+          "title": "牛客 Java 面试题",
+          "url": "https://www.nowcoder.com/"
+        },
+        {
+          "title": "HackerRank Java 轨道",
+          "url": "https://www.hackerrank.com/domains/java"
+        }
+      ],
+      "question_templates": [
+        "JVM 内存模型（堆/栈/方法区）",
+        "垃圾回收算法（Mark-Sweep/CMS/G1/ZGC）",
+        "synchronized 与 ReentrantLock 区别",
+        "HashMap 1.7 vs 1.8 实现差异",
+        "Spring Bean 生命周期"
+      ]
+    },
+    {
+      "id": "1.5",
+      "cat": "编程语言",
+      "cat_en": "SDF/FPL",
+      "name": "JavaScript",
+      "core": false,
+      "importance": 4,
+      "difficulty": 3,
+      "desc": "浏览器与 Node 双端运行，前端与全栈必修",
+      "learn_refs": [
+        {
+          "title": "MDN JavaScript 文档",
+          "url": "https://developer.mozilla.org/zh-CN/docs/Web/JavaScript"
+        },
+        {
+          "title": "JavaScript.info（中译）",
+          "url": "https://zh.javascript.info/"
+        },
+        {
+          "title": "freeCodeCamp JavaScript 课程",
+          "url": "https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "Codewars JavaScript",
+          "url": "https://www.codewars.com/"
+        },
+        {
+          "title": "LeetCode JavaScript",
+          "url": "https://leetcode.cn/"
+        }
+      ],
+      "question_templates": [
+        "Event Loop 宏任务微任务",
+        "闭包与作用域链",
+        "原型链继承 vs class",
+        "Promise 实现原理",
+        "this 指向的 5 种绑定方式"
+      ]
+    },
+    {
+      "id": "2.1",
+      "cat": "数据结构与算法",
+      "cat_en": "AL",
+      "name": "复杂度分析",
+      "core": true,
+      "importance": 5,
+      "difficulty": 2,
+      "desc": "时间/空间复杂度、渐进记号、摊还分析，判断算法好坏的第一把尺",
+      "learn_refs": [
+        {
+          "title": "CLRS 第 3 章 增长速度",
+          "url": "https://mitpress.mit.edu/9780262033848/introduction-to-algorithms/"
+        },
+        {
+          "title": "MIT 6.006 算法公开课",
+          "url": "https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "LeetCode 简单题（计算复杂度）",
+          "url": "https://leetcode.cn/problemset/?difficulty=EASY"
+        }
+      ],
+      "question_templates": [
+        "O(1)/O(log n)/O(n)/O(n log n)/O(n^2)/O(2^n) 的区别",
+        "空间复杂度 O(1) vs O(n)",
+        "递归算法复杂度（递归树/主定理）",
+        "摊还分析（动态数组扩容）"
+      ]
+    },
+    {
+      "id": "2.2",
+      "cat": "数据结构与算法",
+      "cat_en": "AL",
+      "name": "数组与链表",
+      "core": true,
+      "importance": 5,
+      "difficulty": 2,
+      "desc": "顺序存储与链式存储的取舍，所有数据结构的起点",
+      "learn_refs": [
+        {
+          "title": "代码随想录数组专题（9 题）",
+          "url": "https://programmercarl.com/#数组篇"
+        },
+        {
+          "title": "代码随想录链表专题（9 题）",
+          "url": "https://programmercarl.com/%E9%93%BE%E8%A1%A8%E7%90%86%E8%AE%BA%E5%9F%BA%E7%A1%80.html"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "LeetCode 数组标签",
+          "url": "https://leetcode.cn/problemset/?topicSlugs=array"
+        },
+        {
+          "title": "LeetCode 链表标签",
+          "url": "https://leetcode.cn/problemset/?topicSlugs=linked-list"
+        }
+      ],
+      "question_templates": [
+        "反转链表（迭代/递归）",
+        "合并两个有序数组/链表",
+        "环形链表 II（快慢指针找入环节点）",
+        "数组双指针（两数之和/三数之和）",
+        "滑动窗口（最小覆盖子串/无重复字符最长子串）"
+      ]
+    },
+    {
+      "id": "2.3",
+      "cat": "数据结构与算法",
+      "cat_en": "AL",
+      "name": "树与二叉树",
+      "core": true,
+      "importance": 4,
+      "difficulty": 3,
+      "desc": "遍历、BST、平衡树、堆",
+      "learn_refs": [
+        {
+          "title": "代码随想录二叉树专题（34 题，全网最全）",
+          "url": "https://programmercarl.com/%E4%BA%8C%E5%8F%89%E6%A0%91%E7%90%86%E8%AE%BA%E5%9F%BA%E7%A1%80.html"
+        },
+        {
+          "title": "CLRS 第 12-13 章（BST/RB 树）",
+          "url": "https://mitpress.mit.edu/9780262033848/introduction-to-algorithms/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "LeetCode 二叉树标签",
+          "url": "https://leetcode.cn/problemset/?topicSlugs=binary-tree"
+        }
+      ],
+      "question_templates": [
+        "二叉树前中后序遍历（递归+迭代）",
+        "层序遍历（BFS）",
+        "二叉树最大深度/最小深度",
+        "对称二叉树",
+        "二叉搜索树的最近公共祖先",
+        "堆的实现与 TopK"
+      ]
+    },
+    {
+      "id": "2.4",
+      "cat": "数据结构与算法",
+      "cat_en": "AL",
+      "name": "哈希表",
+      "core": true,
+      "importance": 4,
+      "difficulty": 3,
+      "desc": "哈希函数、冲突解决、扩容与负载因子",
+      "learn_refs": [
+        {
+          "title": "代码随想录哈希表专题（10 题）",
+          "url": "https://programmercarl.com/%E5%93%88%E5%B8%8C%E8%A1%A8%E7%90%86%E8%AE%BA%E5%9F%BA%E7%A1%80.html"
+        },
+        {
+          "title": "CLRS 第 11 章",
+          "url": "https://mitpress.mit.edu/9780262033848/introduction-to-algorithms/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "LeetCode 哈希表标签",
+          "url": "https://leetcode.cn/problemset/?topicSlugs=hash-table"
+        }
+      ],
+      "question_templates": [
+        "拉链法 vs 开放寻址法",
+        "负载因子与动态扩容",
+        "两数之和（哈希表 O(n) 解）",
+        "四数相加 II",
+        "字母异位词分组",
+        "LRU 缓存（哈希表+双链表）"
+      ]
+    },
+    {
+      "id": "2.5",
+      "cat": "数据结构与算法",
+      "cat_en": "AL",
+      "name": "排序与查找",
+      "core": true,
+      "importance": 4,
+      "difficulty": 3,
+      "desc": "快排、归并、堆排、二分查找",
+      "learn_refs": [
+        {
+          "title": "代码随想录双指针（含二分查找）",
+          "url": "https://programmercarl.com/%E5%8F%8C%E6%8C%87%E9%92%88%E7%90%86%E8%AE%BA%E5%9F%BA%E7%A1%80.html"
+        },
+        {
+          "title": "浙大 MOOC 数据结构",
+          "url": "https://www.icourse163.org/course/ZJU-93001"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "LeetCode 二分查找",
+          "url": "https://leetcode.cn/problemset/?topicSlugs=binary-search"
+        },
+        {
+          "title": "LeetCode 排序",
+          "url": "https://leetcode.cn/problemset/?topicSlugs=sorting"
+        }
+      ],
+      "question_templates": [
+        "7 种排序算法对比（时间/空间/稳定性）",
+        "快排 partition 实现与优化（三路快排）",
+        "归并排序求逆序对",
+        "二分查找左边界/右边界（lower_bound/upper_bound）"
+      ]
+    },
+    {
+      "id": "2.6",
+      "cat": "数据结构与算法",
+      "cat_en": "AL",
+      "name": "动态规划",
+      "core": true,
+      "importance": 4,
+      "difficulty": 4,
+      "desc": "状态定义、转移方程、记忆化与滚动数组",
+      "learn_refs": [
+        {
+          "title": "代码随想录 DP 专题（54 题 + 状态转移图）",
+          "url": "https://programmercarl.com/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%E7%90%86%E8%AE%BA%E5%9F%BA%E7%A1%80.html"
+        },
+        {
+          "title": "CLRS 第 15 章",
+          "url": "https://mitpress.mit.edu/9780262033848/introduction-to-algorithms/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "LeetCode 动态规划标签",
+          "url": "https://leetcode.cn/problemset/?topicSlugs=dynamic-programming"
+        },
+        {
+          "title": "力扣 DP 分类精讲",
+          "url": "https://leetcode.cn/leetbook/read/dynamic-programming-1-plus/xpddxm/"
+        }
+      ],
+      "question_templates": [
+        "动规五部曲：确定 DP 数组含义 → 递推公式 → 初始化 → 遍历顺序 → 举例",
+        "背包问题（0-1/完全/多重）",
+        "打家劫舍 I/II/III（树形 DP）",
+        "股票买卖 I-IV（冷冻期/手续费）",
+        "编辑距离",
+        "最长公共子序列",
+        "最长递增子序列"
+      ]
+    },
+    {
+      "id": "2.7",
+      "cat": "数据结构与算法",
+      "cat_en": "AL",
+      "name": "图与图算法",
+      "core": true,
+      "importance": 4,
+      "difficulty": 4,
+      "desc": "DFS/BFS、最短路径、最小生成树、拓扑排序",
+      "learn_refs": [
+        {
+          "title": "代码随想录图论（31 题 + 400 幅图）",
+          "url": "https://programmercarl.com/%E5%9B%BE%E8%AE%BA%E7%90%86%E8%AE%BA%E5%9F%BA%E7%A1%80.html"
+        },
+        {
+          "title": "CLRS 第 22-26 章",
+          "url": "https://mitpress.mit.edu/9780262033848/introduction-to-algorithms/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "卡码网 ACM 模式图论练习",
+          "url": "https://kamacoder.com/"
+        },
+        {
+          "title": "LeetCode 图标签",
+          "url": "https://leetcode.cn/problemset/?topicSlugs=graph"
+        }
+      ],
+      "question_templates": [
+        "DFS 递归 vs 迭代（栈实现）",
+        "BFS（队列实现 + 层序）",
+        "岛屿数量 / 腐烂的橘子（Flood Fill）",
+        "最短路径（Dijkstra/Bellman-Ford/Floyd-Warshall）",
+        "最小生成树（Kruskal/Prim）",
+        "拓扑排序（课程表）",
+        "并查集（Union-Find）"
+      ]
+    },
+    {
+      "id": "2.8",
+      "cat": "数据结构与算法",
+      "cat_en": "AL",
+      "name": "栈与队列",
+      "core": true,
+      "importance": 3,
+      "difficulty": 2,
+      "desc": "LIFO/FIFO、单调栈、优先队列",
+      "learn_refs": [
+        {
+          "title": "代码随想录栈与队列（9 题 + 单调栈 4 题）",
+          "url": "https://programmercarl.com/%E6%A0%88%E4%B8%8E%E9%98%9F%E5%88%97%E7%90%86%E8%AE%BA%E5%9F%BA%E7%A1%80.html"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "LeetCode 栈标签",
+          "url": "https://leetcode.cn/problemset/?topicSlugs=stack"
+        },
+        {
+          "title": "LeetCode 队列标签",
+          "url": "https://leetcode.cn/problemset/?topicSlugs=queue"
+        }
+      ],
+      "question_templates": [
+        "有效的括号",
+        "最小栈（O(1) getMin）",
+        "滑动窗口最大值（单调队列）",
+        "接雨水（单调栈）",
+        "柱状图中最大的矩形（单调栈）",
+        "优先队列/堆的应用"
+      ]
+    },
+    {
+      "id": "3.1",
+      "cat": "计算机系统",
+      "cat_en": "AR/OS",
+      "name": "操作系统基础",
+      "core": true,
+      "importance": 5,
+      "difficulty": 3,
+      "desc": "内核与用户态、系统调用、虚拟内存、文件系统",
+      "learn_refs": [
+        {
+          "title": "南京大学操作系统 MOOC",
+          "url": "https://www.icourse163.org/course/nju-1001571004"
+        },
+        {
+          "title": "小林 coding 图解系统",
+          "url": "https://xiaolincoding.com/os/"
+        },
+        {
+          "title": "OSTEP 免费教材",
+          "url": "https://www.os-book.com/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "王道操作系统考研 408 题库",
+          "url": "https://www.nowcoder.com/note/list/7777"
+        }
+      ],
+      "question_templates": [
+        "内核态 vs 用户态（特权级/系统调用）",
+        "虚拟内存 vs 物理内存",
+        "文件系统 inode 结构",
+        "系统调用 vs 库函数"
+      ]
+    },
+    {
+      "id": "3.2",
+      "cat": "计算机系统",
+      "cat_en": "AR/OS",
+      "name": "计算机组成原理",
+      "core": true,
+      "importance": 4,
+      "difficulty": 4,
+      "desc": "CPU、指令集、存储层次、总线与 I/O，软件运行的物理底座",
+      "learn_refs": [
+        {
+          "title": "电子科大组成原理 MOOC",
+          "url": "https://www.icourse163.org/course/UESTC-1001543002"
+        },
+        {
+          "title": "CSAPP 深入理解计算机系统",
+          "url": "https://www.csapp.cs.cmu.edu/"
+        },
+        {
+          "title": "南京大学计算机系统基础",
+          "url": "https://www.icourse163.org/course/NJU-1001625001"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "王道组成原理考研 408 题库",
+          "url": "https://www.nowcoder.com/note/list/7777"
+        },
+        {
+          "title": "CSAPP datalab/bomblab/cachelab",
+          "url": "https://csapp.cs.cmu.edu/3e/labs.html"
+        }
+      ],
+      "question_templates": [
+        "补码计算（加法/减法）",
+        "存储层次（寄存器→缓存→内存→磁盘）",
+        "流水线冒险（结构/数据/控制）",
+        "Cache 直接映射/组相联/全相联"
+      ]
+    },
+    {
+      "id": "3.3",
+      "cat": "计算机系统",
+      "cat_en": "AR/OS",
+      "name": "进程与线程",
+      "core": true,
+      "importance": 4,
+      "difficulty": 3,
+      "desc": "调度、上下文切换、锁、死锁与并发模型",
+      "learn_refs": [
+        {
+          "title": "小林 coding 图解系统（进程管理章节）",
+          "url": "https://xiaolincoding.com/os/#进程管理"
+        },
+        {
+          "title": "OSTEP 第 4-7 章（进程）第 26-29 章（并发）",
+          "url": "https://www.os-book.com/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "LeetCode 多线程标签",
+          "url": "https://leetcode.cn/problemset/?topicSlugs=concurrency"
+        }
+      ],
+      "question_templates": [
+        "进程调度算法（FCFS/SJF/RR/优先级）",
+        "上下文切换开销",
+        "死锁四条件 + 预防/避免/检测",
+        "进程 vs 线程 vs 协程",
+        "锁的粒度与性能",
+        "生产者-消费者模型"
+      ]
+    },
+    {
+      "id": "3.4",
+      "cat": "计算机系统",
+      "cat_en": "AR/OS",
+      "name": "内存管理",
+      "core": true,
+      "importance": 4,
+      "difficulty": 4,
+      "desc": "分页、页表、缺页中断、缓存一致性与交换",
+      "learn_refs": [
+        {
+          "title": "小林 coding 图解系统（内存管理章节）",
+          "url": "https://xiaolincoding.com/os/#内存管理"
+        },
+        {
+          "title": "OSTEP 第 12-19 章（虚拟内存）",
+          "url": "https://www.os-book.com/"
+        },
+        {
+          "title": "CSAPP 第 8-9 章",
+          "url": "https://www.csapp.cs.cmu.edu/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "王道操作系统虚拟内存计算题",
+          "url": "https://www.nowcoder.com/note/list/7777"
+        }
+      ],
+      "question_templates": [
+        "地址翻译（虚拟→物理地址）计算",
+        "多级页表 vs 单级页表",
+        "缺页中断处理流程",
+        "页面置换算法（FIFO/LRU/LFU/Clock）",
+        "TLB 快表作用与命中率"
+      ]
+    },
+    {
+      "id": "3.5",
+      "cat": "计算机系统",
+      "cat_en": "AR/OS",
+      "name": "Linux 与命令行",
+      "core": true,
+      "importance": 4,
+      "difficulty": 2,
+      "desc": "shell、权限、进程管理、包管理与部署脚本",
+      "learn_refs": [
+        {
+          "title": "鸟哥的 Linux 私房菜",
+          "url": "https://linux.vbird.org/"
+        },
+        {
+          "title": "The Linux Command Line",
+          "url": "https://linuxcommand.org/tlcl.php"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "菜鸟 Linux 命令手册",
+          "url": "https://www.runoob.com/linux/linux-command-manual.html"
+        }
+      ],
+      "question_templates": [
+        "chmod 权限数字计算",
+        "ps/top/netstat 常用参数",
+        "管道 | 与重定向 >/>>/</",
+        "find vs grep vs awk vs sed 场景区别",
+        "systemd vs SysVinit"
+      ]
+    },
+    {
+      "id": "4.1",
+      "cat": "网络与Web",
+      "cat_en": "NC",
+      "name": "TCP/IP 基础",
+      "core": true,
+      "importance": 4,
+      "difficulty": 3,
+      "desc": "分层模型、三次握手、IP 寻址与路由",
+      "learn_refs": [
+        {
+          "title": "小林 coding 图解网络（500 图）",
+          "url": "https://xiaolincoding.com/network/"
+        },
+        {
+          "title": "哈工大计算机网络 MOOC",
+          "url": "https://www.icourse163.org/course/HIT-154005"
+        },
+        {
+          "title": "计算机网络：自顶向下方法",
+          "url": "https://www.computer-networking.info/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "王道计算机网络考研 408 题库",
+          "url": "https://www.nowcoder.com/note/list/7777"
+        }
+      ],
+      "question_templates": [
+        "OSI 7 层 vs TCP/IP 4 层",
+        "TCP 三次握手为什么不是两次/四次",
+        "SYN Flood 攻击原理",
+        "Time_wait 状态的作用与端口耗尽",
+        "TCP vs UDP 场景选择",
+        "IP 路由转发 + 子网划分计算"
+      ]
+    },
+    {
+      "id": "4.2",
+      "cat": "网络与Web",
+      "cat_en": "NC",
+      "name": "HTTP 与 Web",
+      "core": true,
+      "importance": 4,
+      "difficulty": 2,
+      "desc": "请求响应、Cookie/Session、HTTPS、REST",
+      "learn_refs": [
+        {
+          "title": "MDN HTTP 基础",
+          "url": "https://developer.mozilla.org/zh-CN/docs/Web/HTTP"
+        },
+        {
+          "title": "小林 coding 图解网络（HTTP 章节）",
+          "url": "https://xiaolincoding.com/network/#http"
+        },
+        {
+          "title": "阮一峰 RESTful API 最佳实践",
+          "url": "https://www.ruanyifeng.com/blog/2014/05/restful_api.html"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "Postman 公开 API 测试",
+          "url": "https://www.postman.com/explore"
+        }
+      ],
+      "question_templates": [
+        "HTTP 常见状态码（200/301/302/400/401/403/404/500）",
+        "Cookie vs Session vs Token(JWT)",
+        "HTTPS TLS 握手流程",
+        "GET vs POST 区别（幂等/参数/缓存）",
+        "CORS 跨域原理"
+      ]
+    },
+    {
+      "id": "4.3",
+      "cat": "网络与Web",
+      "cat_en": "NC",
+      "name": "浏览器工作原理",
+      "core": false,
+      "importance": 3,
+      "difficulty": 3,
+      "desc": "渲染管线、事件循环、JS 引擎与性能优化",
+      "learn_refs": [
+        {
+          "title": "Chrome DevTools Performance 文档",
+          "url": "https://developer.chrome.com/docs/devtools/performance/"
+        },
+        {
+          "title": "MDN 渲染原理",
+          "url": "https://developer.mozilla.org/zh-CN/docs/Web/Performance"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "Chrome DevTools Performance 录制",
+          "url": "https://developer.chrome.com/docs/devtools/performance/"
+        }
+      ],
+      "question_templates": [
+        "渲染管线（Parse→Style→Layout→Paint→Composite）",
+        "回流 reflow vs 重绘 repaint vs 合成 composite",
+        "Event Loop 宏任务微任务执行顺序",
+        "V8 垃圾回收（新生代/老生代）"
+      ]
+    },
+    {
+      "id": "4.4",
+      "cat": "网络与Web",
+      "cat_en": "NC",
+      "name": "HTML/CSS 基础",
+      "core": false,
+      "importance": 3,
+      "difficulty": 1,
+      "desc": "页面结构、盒模型、Flex/Grid 布局",
+      "learn_refs": [
+        {
+          "title": "MDN HTML",
+          "url": "https://developer.mozilla.org/zh-CN/docs/Web/HTML"
+        },
+        {
+          "title": "MDN CSS",
+          "url": "https://developer.mozilla.org/zh-CN/docs/Web/CSS"
+        },
+        {
+          "title": "freeCodeCamp 响应式设计",
+          "url": "https://www.freecodecamp.org/learn/2022/responsive-web-design/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "CodePen 在线实验",
+          "url": "https://codepen.io/"
+        }
+      ],
+      "question_templates": [
+        "盒模型（content-box vs border-box）",
+        "Flex 布局（主轴/交叉轴/6 个属性）",
+        "Grid 布局（网格线/区域命名）",
+        "BFC 块级格式化上下文触发条件"
+      ]
+    },
+    {
+      "id": "5.1",
+      "cat": "后端与架构",
+      "cat_en": "SWEBOK-架构",
+      "name": "系统设计",
+      "core": true,
+      "importance": 5,
+      "difficulty": 5,
+      "desc": "容量估算、存储选型、缓存策略、高可用与权衡取舍，校招面试的分水岭",
+      "learn_refs": [
+        {
+          "title": "System Design Primer（GitHub 160k⭐免费全书）",
+          "url": "https://github.com/donnemartin/system-design-primer"
+        },
+        {
+          "title": "karanpratapsingh/system-design（书式 GitHub）",
+          "url": "https://github.com/karanpratapsingh/system-design"
+        },
+        {
+          "title": "DIA Designing Data-Intensive Applications",
+          "url": "https://dataintensive.net/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "System Design Primer 案例题",
+          "url": "https://github.com/donnemartin/system-design-primer#case-studies"
+        }
+      ],
+      "question_templates": [
+        "设计 URL 短链系统（TinyURL）",
+        "设计消息推送/聊天系统（WhatsApp 3 亿用户）",
+        "设计秒杀系统（10000 QPS）",
+        "设计分布式 KV 存储（Dynamo 风格）",
+        "设计 Feed 流系统（Twitter/Facebook）",
+        "CAP 定理 + BASE + 最终一致性",
+        "读写分离 + 分库分表策略"
+      ]
+    },
+    {
+      "id": "5.2",
+      "cat": "后端与架构",
+      "cat_en": "SWEBOK-架构",
+      "name": "后端服务框架",
+      "core": true,
+      "importance": 4,
+      "difficulty": 3,
+      "desc": "路由、中间件、ORM、分层与依赖注入",
+      "learn_refs": [
+        {
+          "title": "Spring Boot 官方文档",
+          "url": "https://spring.io/projects/spring-boot"
+        },
+        {
+          "title": "Express.js 官方文档",
+          "url": "https://expressjs.com/"
+        },
+        {
+          "title": "Django 官方文档（中译）",
+          "url": "https://docs.djangoproject.com/zh-hans/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "自己用框架写一个 Todo REST API",
+          "url": ""
+        }
+      ],
+      "question_templates": [
+        "MVC vs MVP vs MVVM",
+        "中间件/拦截器/过滤器调用链",
+        "依赖注入（Spring IoC）原理",
+        "ORM 框架缓存策略（一级/二级缓存）",
+        "分层架构（Controller→Service→DAO）"
+      ]
+    },
+    {
+      "id": "5.3",
+      "cat": "后端与架构",
+      "cat_en": "SWEBOK-架构",
+      "name": "RESTful API 设计",
+      "core": true,
+      "importance": 4,
+      "difficulty": 2,
+      "desc": "资源建模、状态码、版本、幂等与限流",
+      "learn_refs": [
+        {
+          "title": "RESTful API 设计指南",
+          "url": "https://restfulapi.net/"
+        },
+        {
+          "title": "阮一峰 RESTful 最佳实践",
+          "url": "https://www.ruanyifeng.com/blog/2014/05/restful_api.html"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "Postman 测试公开 API",
+          "url": "https://www.postman.com/explore"
+        }
+      ],
+      "question_templates": [
+        "REST 六大约束（客户端-无状态-缓存-统一接口-分层-按需代码）",
+        "HTTP 方法幂等性（GET/PUT/DELETE 幂等 vs POST 非幂等）",
+        "API 版本策略（URL vs Header vs Query）",
+        "限流算法（计数器/滑动窗口/令牌桶/漏桶）"
+      ]
+    },
+    {
+      "id": "5.4",
+      "cat": "后端与架构",
+      "cat_en": "SWEBOK-架构",
+      "name": "消息队列",
+      "core": false,
+      "importance": 3,
+      "difficulty": 4,
+      "desc": "异步解耦、削峰填谷、Kafka/RabbitMQ 与投递语义",
+      "learn_refs": [
+        {
+          "title": "RabbitMQ 官方教程",
+          "url": "https://www.rabbitmq.com/getstarted.html"
+        },
+        {
+          "title": "Kafka 官方文档",
+          "url": "https://kafka.apache.org/documentation.html"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "Docker 起 RabbitMQ/Kafka 自己跑 Producer/Consumer",
+          "url": ""
+        }
+      ],
+      "question_templates": [
+        "at-most-once / at-least-once / exactly-once 投递语义",
+        "RabbitMQ Exchange 类型（direct/fanout/topic/headers）",
+        "Kafka Partition + Consumer Group 原理",
+        "死信队列与重试机制",
+        "消息积压排查与处理"
+      ]
+    },
+    {
+      "id": "5.5",
+      "cat": "后端与架构",
+      "cat_en": "SWEBOK-架构",
+      "name": "微服务架构",
+      "core": false,
+      "importance": 3,
+      "difficulty": 5,
+      "desc": "服务拆分、注册发现、网关与链路追踪",
+      "learn_refs": [
+        {
+          "title": "Spring Cloud 官方文档",
+          "url": "https://spring.io/projects/spring-cloud"
+        },
+        {
+          "title": "Dubbo 官方文档（中译）",
+          "url": "https://dubbo.apache.org/zh-cn/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "微服务拆分原则面试题",
+          "url": ""
+        }
+      ],
+      "question_templates": [
+        "服务拆分原则（限界上下文/康威定律）",
+        "注册发现（Consul/Eureka/Nacos）健康检查",
+        "API 网关（路由/限流/鉴权/熔断）",
+        "分布式事务（2PC/TCC/Saga/本地消息表）",
+        "链路追踪（Trace/Span/Annotation + Jaeger/Zipkin）"
+      ]
+    },
+    {
+      "id": "6.1",
+      "cat": "数据与存储",
+      "cat_en": "DM",
+      "name": "关系型数据库",
+      "core": true,
+      "importance": 4,
+      "difficulty": 3,
+      "desc": "表、范式、ER 模型、ACID 与隔离级别",
+      "learn_refs": [
+        {
+          "title": "人大数据库系统概论 MOOC",
+          "url": "https://www.icourse163.org/course/RUC-1001655006"
+        },
+        {
+          "title": "小林 coding 图解 MySQL",
+          "url": "https://xiaolincoding.com/mysql/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "人大数据库系统概论课后题",
+          "url": ""
+        }
+      ],
+      "question_templates": [
+        "ER 模型转关系模式",
+        "范式（1NF→2NF→3NF→BCNF→4NF）判断与规范化",
+        "ACID 四大特性",
+        "SQL 四种隔离级别 + 脏读/不可重复读/幻读"
+      ]
+    },
+    {
+      "id": "6.2",
+      "cat": "数据与存储",
+      "cat_en": "DM",
+      "name": "SQL 查询",
+      "core": true,
+      "importance": 4,
+      "difficulty": 2,
+      "desc": "JOIN、子查询、聚合、执行计划",
+      "learn_refs": [
+        {
+          "title": "SQL Bolt（免费交互式）",
+          "url": "https://sqlbolt.com/"
+        },
+        {
+          "title": "W3Schools SQL",
+          "url": "https://www.w3schools.com/sql/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "LeetCode 数据库题库",
+          "url": "https://leetcode.cn/problemset/?studyPlan=SQLI"
+        },
+        {
+          "title": "HackerRank SQL 轨道",
+          "url": "https://www.hackerrank.com/domains/sql"
+        },
+        {
+          "title": "SQL Zoo",
+          "url": "https://sqlzoo.net/"
+        }
+      ],
+      "question_templates": [
+        "INNER/LEFT/RIGHT/FULL JOIN 区别",
+        "GROUP BY + HAVING + WHERE 执行顺序",
+        "子查询 vs JOIN 性能对比",
+        "EXPLAIN 执行计划解读",
+        "窗口函数（ROW_NUMBER/RANK/LAG/LEAD）"
+      ]
+    },
+    {
+      "id": "6.3",
+      "cat": "数据与存储",
+      "cat_en": "DM",
+      "name": "事务与并发控制",
+      "core": true,
+      "importance": 4,
+      "difficulty": 4,
+      "desc": "MVCC、锁粒度、幻读、分布式事务",
+      "learn_refs": [
+        {
+          "title": "小林 coding 图解 MySQL（事务章节）",
+          "url": "https://xiaolincoding.com/mysql/#事务"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "MVCC / undo log / read view 原理题",
+          "url": ""
+        }
+      ],
+      "question_templates": [
+        "MVCC 实现原理（undo log + ReadView + 可见性算法）",
+        "RC vs RR 隔离级别下 MVCC 行为差异",
+        "Next-Key Lock 解决幻读",
+        "两阶段提交（2PC）阻塞问题",
+        "分布式事务 Saga 模式"
+      ]
+    },
+    {
+      "id": "6.4",
+      "cat": "数据与存储",
+      "cat_en": "DM",
+      "name": "索引原理",
+      "core": false,
+      "importance": 3,
+      "difficulty": 4,
+      "desc": "B+ 树、覆盖索引、回表、最左前缀",
+      "learn_refs": [
+        {
+          "title": "小林 coding 图解 MySQL（索引章节）",
+          "url": "https://xiaolincoding.com/mysql/#索引"
+        },
+        {
+          "title": "B+ 树可视化",
+          "url": "https://www.cs.usfca.edu/~galles/visualization/BPlusTree.html"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "EXPLAIN 执行计划解读练习",
+          "url": ""
+        }
+      ],
+      "question_templates": [
+        "为什么 InnoDB 用 B+ 树不用 B 树/红黑树",
+        "聚簇索引 vs 非聚簇索引（回表）",
+        "覆盖索引原理",
+        "最左前缀匹配 + 索引失效场景",
+        "联合索引的物理存储"
+      ]
+    },
+    {
+      "id": "6.5",
+      "cat": "数据与存储",
+      "cat_en": "DM",
+      "name": "NoSQL 与缓存",
+      "core": false,
+      "importance": 3,
+      "difficulty": 3,
+      "desc": "Redis、MongoDB、CAP、缓存穿透与雪崩",
+      "learn_refs": [
+        {
+          "title": "Redis 官方文档（中译）",
+          "url": "https://redis.io/docs/latest/zh/"
+        },
+        {
+          "title": "Redis University RU101 免费课",
+          "url": "https://university.redis.com/courses/ru101"
+        },
+        {
+          "title": "小林 coding 图解 Redis",
+          "url": "https://xiaolincoding.com/redis/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "Docker 起 Redis 自己练数据结构",
+          "url": ""
+        }
+      ],
+      "question_templates": [
+        "Redis 5 种基础类型 + 3 种扩展类型应用场景",
+        "缓存穿透（布隆过滤器/空值缓存）/击穿（互斥锁）/雪崩（过期时间打散）",
+        "Redis 持久化 RDB vs AOF",
+        "Redis 高可用（主从/哨兵/集群）",
+        "CAP 定理与 BASE 理论"
+      ]
+    },
+    {
+      "id": "7.1",
+      "cat": "软件工程",
+      "cat_en": "SWEBOK-需求/测试",
+      "name": "设计模式",
+      "core": true,
+      "importance": 4,
+      "difficulty": 4,
+      "desc": "单例、工厂、观察者、策略、适配器与重构",
+      "learn_refs": [
+        {
+          "title": "Refactoring.Guru 图解设计模式（免费）",
+          "url": "https://refactoring.guru/design-patterns"
+        },
+        {
+          "title": "《Head First 设计模式》",
+          "url": ""
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "23 种设计模式手写一遍",
+          "url": ""
+        }
+      ],
+      "question_templates": [
+        "单例模式 6 种实现（饿汉/懒汉/DCL/枚举/静态内部类/容器）",
+        "工厂方法 vs 抽象工厂",
+        "策略模式 vs 状态模式",
+        "观察者模式（发布-订阅 vs 观察者）",
+        "适配器模式（类适配器 vs 对象适配器）"
+      ]
+    },
+    {
+      "id": "7.2",
+      "cat": "软件工程",
+      "cat_en": "SWEBOK-需求/测试",
+      "name": "软件架构基础",
+      "core": true,
+      "importance": 4,
+      "difficulty": 4,
+      "desc": "分层、模块化、耦合与内聚、架构决策记录",
+      "learn_refs": [
+        {
+          "title": "哈工大软件工程专业导论 MOOC",
+          "url": "https://www.icourse163.org/course/HIT-298007"
+        },
+        {
+          "title": "东北大学软件工程 MOOC",
+          "url": "https://www.icourse163.org/course/NEU-1001812013"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "自己画一个系统架构图（draw.io）",
+          "url": "https://app.diagrams.net/"
+        }
+      ],
+      "question_templates": [
+        "耦合度（高/低）vs 内聚度（7 种类型）",
+        "分层架构的职责边界与依赖方向",
+        "模块化设计原则（高内聚低耦合/单一职责/依赖倒置）",
+        "架构决策记录 ADR 模板"
+      ]
+    },
+    {
+      "id": "7.3",
+      "cat": "软件工程",
+      "cat_en": "SWEBOK-需求/测试",
+      "name": "需求分析",
+      "core": true,
+      "importance": 3,
+      "difficulty": 2,
+      "desc": "用例、用户故事、验收标准与需求优先级",
+      "learn_refs": [
+        {
+          "title": "《用户故事与敏捷方法》Mike Cohn",
+          "url": ""
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "给一个项目写用户故事 + 验收标准",
+          "url": ""
+        }
+      ],
+      "question_templates": [
+        "用户故事格式（作为...我想要...以便...）",
+        "INVEST 原则",
+        "验收标准 Given-When-Then",
+        "MoSCoW 优先级（Must/Should/Could/Won't）"
+      ]
+    },
+    {
+      "id": "8.1",
+      "cat": "工程实践",
+      "cat_en": "SWEBOK-CM",
+      "name": "Git 版本控制",
+      "core": true,
+      "importance": 5,
+      "difficulty": 1,
+      "desc": "提交、分支、合并、冲突解决与协作流",
+      "learn_refs": [
+        {
+          "title": "Git 官方文档（中译）",
+          "url": "https://git-scm.com/book/zh/v2"
+        },
+        {
+          "title": "Pro Git 中文版",
+          "url": "https://git-scm.com/book/zh/v2"
+        },
+        {
+          "title": "GitHub Docs",
+          "url": "https://docs.github.com/zh"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "Learn Git Branching（可视化通关）",
+          "url": "https://learngitbranching.js.org/?locale=zh_CN"
+        },
+        {
+          "title": "Oh My Git!（游戏化）",
+          "url": "https://ohmygit.org/"
+        },
+        {
+          "title": "GitHub Skills 交互式课程",
+          "url": "https://skills.github.com/"
+        }
+      ],
+      "question_templates": [
+        "git rebase vs git merge 区别（历史改写）",
+        "git reset --soft/mixed/hard vs git revert",
+        "Git Flow 分支模型 vs GitHub Flow vs Trunk-Based",
+        "PR/MR 工作流 + Code Review 要点",
+        "git stash + cherry-pick + reflog 恢复丢失提交"
+      ]
+    },
+    {
+      "id": "8.2",
+      "cat": "工程实践",
+      "cat_en": "SWEBOK-CM",
+      "name": "单元测试",
+      "core": true,
+      "importance": 4,
+      "difficulty": 2,
+      "desc": "断言、Mock、覆盖率与 TDD 流程",
+      "learn_refs": [
+        {
+          "title": "Python pytest 官方文档",
+          "url": "https://docs.python.org/zh-cn/3/library/unittest.html"
+        },
+        {
+          "title": "JUnit 5 用户指南",
+          "url": "https://junit.org/junit5/docs/current/user-guide/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "pytest 覆盖自己写的函数",
+          "url": ""
+        }
+      ],
+      "question_templates": [
+        "AAA 模式（Arrange-Act-Assert）",
+        "Mock vs Stub vs Fake vs Spy",
+        "覆盖率（行/分支/路径）多少合适",
+        "TDD 红绿重构循环"
+      ]
+    },
+    {
+      "id": "8.3",
+      "cat": "工程实践",
+      "cat_en": "SWEBOK-CM",
+      "name": "调试与性能分析",
+      "core": true,
+      "importance": 4,
+      "difficulty": 2,
+      "desc": "断点、日志、Profiler、火焰图与内存泄漏排查",
+      "learn_refs": [
+        {
+          "title": "Brendan Gregg 性能分析学",
+          "url": "https://www.brendangregg.com/"
+        },
+        {
+          "title": "Chrome DevTools Performance",
+          "url": "https://developer.chrome.com/docs/devtools/performance/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "py-spy Python 火焰图",
+          "url": "https://github.com/benfred/py-spy"
+        }
+      ],
+      "question_templates": [
+        "CPU 火焰图怎么读（y 轴调用栈/x 轴 CPU 时间）",
+        "内存泄漏定位工具（valgrind/ASan/leakcanary）",
+        "Perf 工具链（perf record + perf script）",
+        "日志级别与结构化日志"
+      ]
+    },
+    {
+      "id": "8.4",
+      "cat": "工程实践",
+      "cat_en": "SWEBOK-CM",
+      "name": "CI/CD",
+      "core": false,
+      "importance": 3,
+      "difficulty": 2,
+      "desc": "流水线、自动测试、自动部署与回滚",
+      "learn_refs": [
+        {
+          "title": "GitHub Actions 官方文档",
+          "url": "https://docs.github.com/zh/actions"
+        },
+        {
+          "title": "GitLab CI/CD",
+          "url": "https://docs.gitlab.com/ee/ci/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "给 GitHub 上自己的 Python 项目加 GitHub Actions",
+          "url": ""
+        }
+      ],
+      "question_templates": [
+        "CI/CD 流水线典型阶段（build→test→package→deploy）",
+        "蓝绿部署 vs 金丝雀发布 vs 滚动更新",
+        "Dockerfile 多阶段构建优化镜像体积",
+        "回滚策略（数据库迁移向前向后兼容）"
+      ]
+    },
+    {
+      "id": "8.5",
+      "cat": "工程实践",
+      "cat_en": "SWEBOK-CM",
+      "name": "技术文档",
+      "core": false,
+      "importance": 2,
+      "difficulty": 1,
+      "desc": "README、API 文档、变更日志与评审记录",
+      "learn_refs": [
+        {
+          "title": "Make a README 指南",
+          "url": "https://www.makeareadme.com/"
+        },
+        {
+          "title": "Diátaxis 文档写作框架",
+          "url": "https://diataxis.frama.io/zh-cn/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "给 GitHub 上每个项目写合格 README",
+          "url": ""
+        }
+      ],
+      "question_templates": [
+        "Diátaxis 四类文档（教程/指南/参考/解释）",
+        "README 结构模板",
+        "OpenAPI/Swagger 写 API 文档"
+      ]
+    },
+    {
+      "id": "9.1",
+      "cat": "人工智能",
+      "cat_en": "AI",
+      "name": "数据处理与分析",
+      "core": true,
+      "importance": 4,
+      "difficulty": 2,
+      "desc": "NumPy/Pandas、数据清洗、特征工程与可视化，AI 落地的第一步",
+      "learn_refs": [
+        {
+          "title": "NumPy 官方文档",
+          "url": "https://numpy.org/doc/stable/"
+        },
+        {
+          "title": "Pandas 官方文档",
+          "url": "https://pandas.pydata.org/docs/"
+        },
+        {
+          "title": "d2l.ai 数据处理章节",
+          "url": "https://zh.d2l.ai/chapter_preliminaries/pandas.html"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "Kaggle Learn 免费课程",
+          "url": "https://www.kaggle.com/learn"
+        },
+        {
+          "title": "Pandas Exercises",
+          "url": "https://github.com/guipsamora/pandas_exercises"
+        }
+      ],
+      "question_templates": [
+        "Pandas DataFrame 常用操作（缺失值/去重/分组/透视）",
+        "NumPy 广播机制",
+        "特征工程（归一化/标准化/独热编码/特征选择）",
+        "数据清洗流程（缺失值/异常值/重复值/类型转换）"
+      ]
+    },
+    {
+      "id": "9.2",
+      "cat": "人工智能",
+      "cat_en": "AI",
+      "name": "机器学习入门",
+      "core": true,
+      "importance": 4,
+      "difficulty": 4,
+      "desc": "监督/无监督学习、损失函数、过拟合与交叉验证",
+      "learn_refs": [
+        {
+          "title": "Andrew Ng 机器学习（Coursera 可免费旁听）",
+          "url": "https://www.coursera.org/learn/machine-learning"
+        },
+        {
+          "title": "李宏毅机器学习（台大 YouTube）",
+          "url": "https://www.youtube.com/watch?v=WvxzbqvzXyQ&list=PLJV_el3uVTsPy9qRio5HLB3czPfZOycpV"
+        },
+        {
+          "title": "scikit-learn 官方教程",
+          "url": "https://scikit-learn.org/stable/tutorial/index.html"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "CS229 Problem Sets（Stanford ML）",
+          "url": "https://see.stanford.edu/Course/CS229"
+        },
+        {
+          "title": "Kaggle 分类/回归竞赛",
+          "url": "https://www.kaggle.com/competitions"
+        }
+      ],
+      "question_templates": [
+        "监督学习 vs 无监督学习 vs 强化学习",
+        "偏差-方差权衡（过拟合 vs 欠拟合）",
+        "交叉验证 K-Fold 原理",
+        "常见损失函数（MSE/交叉熵/Hinge Loss）",
+        "梯度下降（BGD/SGD/MBGD）",
+        "正则化（L1/L2/Dropout）"
+      ]
+    },
+    {
+      "id": "9.3",
+      "cat": "人工智能",
+      "cat_en": "AI",
+      "name": "大模型应用",
+      "core": true,
+      "importance": 4,
+      "difficulty": 3,
+      "desc": "提示工程、RAG、微调概念与幻觉控制",
+      "learn_refs": [
+        {
+          "title": "LLM Zoomcamp（DataTalks.Club 10 周免费课）",
+          "url": "https://github.com/DataTalksClub/llm-zoomcamp"
+        },
+        {
+          "title": "天池《动手学大模型应用开发》免费课",
+          "url": "https://tianchi.aliyun.com/course/1738"
+        },
+        {
+          "title": "斯坦福 CS324 Large Language Models",
+          "url": "https://stanford-cs324.github.io/winter2022/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "LLM Zoomcamp 10 周作业",
+          "url": "https://github.com/DataTalksClub/llm-zoomcamp"
+        }
+      ],
+      "question_templates": [
+        "Transformer 架构（Encoder/Decoder/MHA）",
+        "Prompt 工程（Zero-shot/One-shot/Few-shot/CoT/ToT）",
+        "幻觉成因与控制策略",
+        "微调（Pre-train → SFT → RLHF → DPO）",
+        "Function Calling / Tool Use 实现"
+      ]
+    },
+    {
+      "id": "9.4",
+      "cat": "人工智能",
+      "cat_en": "AI",
+      "name": "模型评估与实验",
+      "core": false,
+      "importance": 3,
+      "difficulty": 3,
+      "desc": "数据集划分、指标选择、A/B 测试与偏差分析",
+      "learn_refs": [
+        {
+          "title": "DeepLearning.AI RAG 课程（免费旁听）",
+          "url": "https://corporate.deeplearning.ai/courses/retrieval-augmented-generation/information"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "自己跑一遍 train/val/test + 混淆矩阵",
+          "url": ""
+        }
+      ],
+      "question_templates": [
+        "精确率/召回率/F1/ROC-AUC",
+        "Macro-F1 vs Micro-F1",
+        "混淆矩阵解读",
+        "A/B 测试样本量计算与显著性检验"
+      ]
+    },
+    {
+      "id": "9.5",
+      "cat": "人工智能",
+      "cat_en": "AI",
+      "name": "深度学习",
+      "core": false,
+      "importance": 3,
+      "difficulty": 5,
+      "desc": "神经网络、反向传播、CNN/RNN 与训练调优",
+      "learn_refs": [
+        {
+          "title": "d2l.ai 动手学深度学习（PyTorch 版）",
+          "url": "https://zh.d2l.ai/"
+        },
+        {
+          "title": "deeplearning.ai 专项（可免费旁听）",
+          "url": "https://www.coursera.org/specializations/deep-learning"
+        },
+        {
+          "title": "PyTorch 官方教程",
+          "url": "https://pytorch.org/tutorials/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "Kaggle 手写数字识别/MNIST",
+          "url": "https://www.kaggle.com/c/digit-recognizer"
+        }
+      ],
+      "question_templates": [
+        "反向传播链式求导推导",
+        "CNN 三大操作（卷积/池化/全连接）+ 参数量计算",
+        "BatchNorm / LayerNorm 原理区别",
+        "Adam 优化器（动量 + RMSProp 结合）",
+        "学习率调度器（StepLR/CosineAnnealing/OneCycle）",
+        "Transformer Self-Attention 计算复杂度 O(n²d)"
+      ]
+    },
+    {
+      "id": "9.6",
+      "cat": "人工智能",
+      "cat_en": "AI",
+      "name": "检索增强与向量库",
+      "core": false,
+      "importance": 3,
+      "difficulty": 3,
+      "desc": "Embedding、向量检索、pgvector 与召回评估",
+      "learn_refs": [
+        {
+          "title": "LLM Zoomcamp Week 3: Vector Search",
+          "url": "https://github.com/DataTalksClub/llm-zoomcamp/tree/main/03-vector-search"
+        },
+        {
+          "title": "pgvector GitHub",
+          "url": "https://github.com/pgvector/pgvector"
+        },
+        {
+          "title": "ChromaDB",
+          "url": "https://www.trychroma.com/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "LLM Zoomcamp 完整 RAG pipeline",
+          "url": "https://github.com/DataTalksClub/llm-zoomcamp"
+        }
+      ],
+      "question_templates": [
+        "Embedding 模型选择（OpenAI/text-embedding-3-small vs BGE-M3）",
+        "向量检索（HNSW vs IVF vs PQ）ANN 算法",
+        "RAG 评估（Retrieval Precision@K + Generation Faithfulness）",
+        "多路召回（BM25 + 向量 + RRF 融合）",
+        "Query 改写（HyDE / Step-Back）"
+      ]
+    },
+    {
+      "id": "10.1",
+      "cat": "数学基础",
+      "cat_en": "MSF",
+      "name": "离散数学",
+      "core": true,
+      "importance": 4,
+      "difficulty": 4,
+      "desc": "集合、关系、图论、逻辑与证明，算法与安全的共同地基",
+      "learn_refs": [
+        {
+          "title": "北大离散数学 MOOC",
+          "url": "https://www.icourse163.org/course/PKU-1001947003"
+        },
+        {
+          "title": "Rosen 离散数学及其应用",
+          "url": ""
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "OI Wiki 数学章节",
+          "url": "https://oiwiki.org/math/"
+        }
+      ],
+      "question_templates": [
+        "集合运算（并/交/差/对称差）+ 容斥原理",
+        "关系的性质（自反/对称/传递/反对称）",
+        "图论（握手定理 + 欧拉路径/回路判定）",
+        "递归关系求解（特征方程法）",
+        "P vs NP vs NP-Complete vs NP-Hard"
+      ]
+    },
+    {
+      "id": "10.2",
+      "cat": "数学基础",
+      "cat_en": "MSF",
+      "name": "概率论与统计",
+      "core": false,
+      "importance": 3,
+      "difficulty": 3,
+      "desc": "条件概率、期望、分布与显著性检验，系统容量估算与 AI 的前置",
+      "learn_refs": [
+        {
+          "title": "浙大概率论与数理统计 MOOC",
+          "url": "https://www.icourse163.org/course/ZJU-232005"
+        },
+        {
+          "title": "Seeing Theory（可视化概率统计）",
+          "url": "https://seeing-theory.brown.edu/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "浙大 MOOC 配套作业",
+          "url": ""
+        }
+      ],
+      "question_templates": [
+        "贝叶斯定理（朴素贝叶斯分类器基础）",
+        "常见分布（均匀/伯努利/二项/正态/泊松）",
+        "期望的线性性质 + 方差计算",
+        "假设检验与 P 值",
+        "置信区间"
+      ]
+    },
+    {
+      "id": "10.3",
+      "cat": "数学基础",
+      "cat_en": "MSF",
+      "name": "线性代数",
+      "core": false,
+      "importance": 3,
+      "difficulty": 3,
+      "desc": "向量、矩阵、特征值，图形学与机器学习的语言",
+      "learn_refs": [
+        {
+          "title": "3Blue1Brown 线性代数的本质（免费视频）",
+          "url": "https://www.youtube.com/playlist?list=PLZHQObOWTQDNU6R1_67000DxZK0iTibc0"
+        },
+        {
+          "title": "MIT 18.06 Linear Algebra（Gilbert Strang）",
+          "url": "https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "NumPy 矩阵运算实操",
+          "url": ""
+        }
+      ],
+      "question_templates": [
+        "矩阵乘法结合律 vs 交换律（AB ≠ BA）",
+        "行列式的几何意义（有向体积）",
+        "特征值分解 A = PDP⁻¹",
+        "SVD 奇异值分解",
+        "矩阵的秩 + 线性无关/相关",
+        "投影矩阵 + 最小二乘"
+      ]
+    },
+    {
+      "id": "11.1",
+      "cat": "安全基础",
+      "cat_en": "SEC",
+      "name": "Web 安全基础",
+      "core": true,
+      "importance": 4,
+      "difficulty": 3,
+      "desc": "SQL 注入、XSS、CSRF、越权与安全编码",
+      "learn_refs": [
+        {
+          "title": "Offensive360 Secure Coding Academy（80 模块零账号免费）",
+          "url": "https://offensive360.com/academy/"
+        },
+        {
+          "title": "Hacker101 新手指南 + CTF",
+          "url": "https://www.hacker101.com/"
+        },
+        {
+          "title": "PortSwigger Web Security Academy",
+          "url": "https://portswigger.net/web-security"
+        },
+        {
+          "title": "OWASP Top 10 2021",
+          "url": "https://owasp.org/Top10/zh/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "Hacker101 CTF（实时可玩）",
+          "url": "https://www.hacker101.com/"
+        },
+        {
+          "title": "picoCTF（CMU 出品，入门友好）",
+          "url": "https://picoctf.org/"
+        },
+        {
+          "title": "OWASP Juice Shop（本地 Docker）",
+          "url": "https://owasp.org/www-project-juice-shop/"
+        },
+        {
+          "title": "DVWA",
+          "url": "https://dvwa.co.uk/"
+        }
+      ],
+      "question_templates": [
+        "SQL 注入原理 + 防御（参数化查询）",
+        "XSS 三类型（存储型/反射型/DOM 型）+ CSP 防御",
+        "CSRF 原理 + Token SameSite 防御",
+        "越权（水平/垂直）测试方法",
+        "SSRF 内网探测与云元数据攻击",
+        "命令注入 + 路径穿越",
+        "文件上传漏洞 + 后缀绕过"
+      ]
+    },
+    {
+      "id": "11.2",
+      "cat": "安全基础",
+      "cat_en": "SEC",
+      "name": "认证与授权",
+      "core": true,
+      "importance": 3,
+      "difficulty": 3,
+      "desc": "Session/JWT、OAuth 2.0、RBAC 与最小权限",
+      "learn_refs": [
+        {
+          "title": "Offensive360 Auth & AuthZ（10 模块免费）",
+          "url": "https://offensive360.com/academy/"
+        },
+        {
+          "title": "OAuth 2.0 RFC 6749",
+          "url": "https://datatracker.ietf.org/doc/html/rfc6749"
+        },
+        {
+          "title": "JWT Introduction",
+          "url": "https://jwt.io/introduction"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "Hacker101 CTF 认证关卡",
+          "url": "https://www.hacker101.com/"
+        }
+      ],
+      "question_templates": [
+        "Session vs JWT（有状态 vs 无状态）",
+        "JWT 三部分（Header.Payload.Signature）+ None 算法绕过",
+        "OAuth 2.0 四种授权码模式（Authorization Code/Implicit/Password/Client Credentials）",
+        "redirect_uri 劫持 + state 参数作用",
+        "RBAC vs ABAC vs ACL",
+        "暴力破解防护（限频/验证码/账户锁定）"
+      ]
+    },
+    {
+      "id": "11.3",
+      "cat": "安全基础",
+      "cat_en": "SEC",
+      "name": "密码学入门",
+      "core": false,
+      "importance": 2,
+      "difficulty": 4,
+      "desc": "对称/非对称加密、哈希、签名与证书链",
+      "learn_refs": [
+        {
+          "title": "Offensive360 Cryptography（8 模块免费）",
+          "url": "https://offensive360.com/academy/"
+        },
+        {
+          "title": "CryptoHack（免费密码学挑战）",
+          "url": "https://cryptohack.org/"
+        }
+      ],
+      "practice_refs": [
+        {
+          "title": "CryptoHack 挑战关卡",
+          "url": "https://cryptohack.org/"
+        }
+      ],
+      "question_templates": [
+        "对称加密（AES-DES）+ 模式（CBC/ECB/GCM）+ IV/Nonce 作用",
+        "非对称加密（RSA/ECC）+ 数字签名流程",
+        "哈希（MD5/SHA-1/SHA-256）+ 彩虹表攻击",
+        "TLS/SSL 握手流程 + 证书链验证",
+        "ECB 模式不安全的直观理解（相同明文块→相同密文块）"
+      ]
+    }
+  ]
+}

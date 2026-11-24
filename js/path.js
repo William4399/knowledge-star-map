@@ -1,6 +1,7 @@
-import { Data, nodeById, galaxyOf, unlocked, missingPrereqs, questionsFor } from './data.js';
+import { Data, nodeById, galaxyOf, unlocked, missingPrereqs } from './data.js';
 import { getState, setDirection } from './store.js';
-import { escapeHtml, starsHtml } from './util.js';
+import { escapeHtml } from './util.js';
+import { getWeakAreas, CHALLENGE_SIZE } from './kb.js';
 
 export function unlockPotential(nodeId, lit, cache) {
   if (cache && cache[nodeId] != null) return cache[nodeId];
@@ -14,21 +15,59 @@ export function unlockPotential(nodeId, lit, cache) {
   return count;
 }
 
+/**
+ * 改进版节点评分算法
+ * 考虑：方向权重 + 重要度/难度 + 解锁潜力 + 历史薄弱点
+ */
 export function scoreNode(node, role, lit, state, potential) {
   const weight = role.galaxyWeights[node.galaxy] ?? 0.3;
   let score = weight * 40 + node.importance * 4 - node.complexity * 2 + potential * 3;
   if (node.core) score += 2;
   if (role.required.includes(node.id)) score += 12;
   if (state.claimed[node.id]) score += 6;
+  
+  // ===== 薄弱点加权 =====
+  // 如果用户历史上对该星系表现差，推荐时给予额外权重
+  if (state.mistakes && Object.keys(state.mistakes).length > 0) {
+    const mistakesInGalaxy = Object.values(state.mistakes).filter(m => {
+      const n = nodeById(m.node);
+      return n && n.galaxy === node.galaxy;
+    }).length;
+    // 每个错题节点在该星系+2分
+    score += mistakesInGalaxy * 2;
+  }
+  
+  // 低分节点再加权
+  const record = state.records[node.id];
+  if (record && record.attempts >= 2 && record.best < 70 && !state.lit[node.id]) {
+    score += 5; // 挑战过但低分且没点亮 → 应该先补
+  }
+  
   return score;
 }
 
+/* 推荐理由收敛为 3 类：必修 / 推荐 / 补短板 */
+const REASON = {
+  weak: { key: 'weak', label: '补短板' },
+  must: { key: 'must', label: '必修' },
+  rec: { key: 'rec', label: '推荐' }
+};
+
 function reasonFor(node, role) {
-  if (role.required.includes(node.id)) return '方向必修';
-  const weight = role.galaxyWeights[node.galaxy] ?? 0;
-  if (weight >= 0.8) return '方向核心';
-  if (node.core) return '体系核心';
-  return '补齐相邻能力';
+  const state = getState();
+
+  // 错题或低分记录 → 补短板
+  if (state.mistakes) {
+    const hasMistakes = Object.values(state.mistakes).some(m => m.node === node.id);
+    if (hasMistakes) return REASON.weak;
+  }
+  const record = state.records[node.id];
+  if (record && record.attempts >= 2 && record.best < 70 && !state.lit[node.id]) {
+    return REASON.weak;
+  }
+
+  if (role.required.includes(node.id)) return REASON.must;
+  return REASON.rec;
 }
 
 export function roleProgress(role, lit) {
@@ -93,13 +132,15 @@ export function buildPlan() {
   };
 }
 
-const READY_LIMIT = 6;
-const UPCOMING_LIMIT = 6;
+const READY_LIMIT = 3;
+const UPCOMING_LIMIT = 4;
 const expanded = { ready: false, upcoming: false };
 
 export function renderPath(root, handlers = {}) {
   const plan = buildPlan();
   const { role, ready, upcoming, progress } = plan;
+  const state = getState();
+  const lit = state.lit;
   const pct = Math.round(progress.percent * 100);
   const shownReady = expanded.ready ? ready : ready.slice(0, READY_LIMIT);
   const shownUpcoming = expanded.upcoming ? upcoming : upcoming.slice(0, UPCOMING_LIMIT);
@@ -109,40 +150,40 @@ export function renderPath(root, handlers = {}) {
       ${escapeHtml(r.name)}
     </button>`).join('');
 
-  const readyHtml = shownReady.length ? shownReady.map(item => {
+  const passLine = Data.questionMeta.pass_threshold || 60;
+  const readyHtml = shownReady.length ? shownReady.map((item, i) => {
     const g = galaxyOf(item.node);
-    const qCount = questionsFor(item.node.id).length;
+    const isNext = i === 0;
     const tags = [
       `<span class="tag" style="color:${g.color};border-color:${g.color}55">${escapeHtml(g.name)}</span>`,
-      `<span class="tag accent">${escapeHtml(item.reason)}</span>`,
-      item.node.core ? '<span class="tag core">核心</span>' : ''
-    ].filter(Boolean).join('');
+      `<span class="tag tag-${item.reason.key}">${item.reason.label}</span>`
+    ].join('');
     return `
-      <article class="target">
+      <article class="target${isNext ? ' is-next' : ''}">
         <div class="target-main">
           <div class="target-title">
-            <span class="target-dot" style="background:${g.color};box-shadow:0 0 10px ${g.color}"></span>
+            <span class="target-index">${String(i + 1).padStart(2, '0')}</span>
             <h3>${escapeHtml(item.node.name)}</h3>
+            ${isNext ? '<span class="next-badge">下一关</span>' : ''}
             ${tags}
           </div>
           <p class="target-desc">${escapeHtml(item.node.description)}</p>
           <div class="target-meta">
-            <span>重要度 ${starsHtml(item.node.importance)}</span>
             <span>难度 ${item.node.complexity} / 5</span>
-            <span>${qCount} 题 · 60 分及格</span>
-            ${item.potential > 0 ? `<span class="potential">点亮后可解锁 ${item.potential} 颗</span>` : ''}
+            <span>${CHALLENGE_SIZE} 题 · ${passLine} 分及格</span>
+            ${item.potential > 0 ? `<span class="potential">解锁 ${item.potential} 颗</span>` : ''}
           </div>
         </div>
         <div class="target-actions">
-          <button class="btn primary sm" data-action="challenge" data-id="${item.node.id}">挑战</button>
-          <button class="btn ghost sm" data-action="focus" data-id="${item.node.id}">定位</button>
+          <button class="btn primary sm" data-action="challenge" data-id="${item.node.id}">开始挑战</button>
+          <button class="link-btn" data-action="focus" data-id="${item.node.id}">在星图中查看</button>
         </div>
       </article>`;
   }).join('') : (pct === 100
-    ? `<div class="empty done"><p>✦ 这个方向的必修能力已经全部点亮。</p><p class="muted">可以切换到其他方向继续拓展，或去「我的」查看岗位与比赛匹配。</p></div>`
+    ? `<div class="empty done"><p>这个方向的必修能力已全部点亮。</p><p class="muted">切换到其他方向继续拓展，或去「我的」查看岗位匹配。</p></div>`
     : `<div class="empty">
-      <p>当前没有可以直接挑战的星星。</p>
-      <p class="muted">先看看下方「接下来会解锁」，完成前置依赖后这里会出现新的目标。</p>
+      <p>暂时没有可直接挑战的星星。</p>
+      <p class="muted">先完成下方「接下来会解锁」里的前置节点，这里就会出现新的目标。</p>
     </div>`);
 
   const upcomingHtml = shownUpcoming.length ? shownUpcoming.map(item => {
@@ -185,6 +226,37 @@ export function renderPath(root, handlers = {}) {
       <b>✦ 这个方向的必修能力已经全部点亮</b>
       <p>可以去「我的」查看岗位与比赛匹配，或者切换方向继续拓展。</p>
     </div>` : '';
+  
+  // ===== 薄弱领域提示 =====
+  const weakAreas = getWeakAreas();
+  let weakPanelHtml = '';
+  if (weakAreas.length > 0) {
+    const weakItems = weakAreas.slice(0, 3).map(w => {
+      const g = Data.galaxies.find(x => x.id === w.galaxy);
+      const ready = unlocked(Data.byId[w.nodeId], lit);
+      return `
+        <article class="weak-row">
+          <span class="target-dot small" style="background:${g?.color || '#f0a35e'}"></span>
+          <div class="weak-main">
+            <b>${escapeHtml(w.nodeName)}</b>
+            <span class="tag" style="color:${g?.color || '#f0a35e'};border-color:${(g?.color || '#f0a35e')}55">${escapeHtml(g?.name || w.galaxy || '未分类')}</span>
+            <span class="muted small">错过 ${w.weaknessScore} 次</span>
+          </div>
+          ${ready 
+            ? `<button class="btn primary sm" data-action="challenge" data-id="${w.nodeId}">开始挑战</button>`
+            : `<button class="btn ghost sm" data-action="focus" data-id="${w.nodeId}">查看</button>`}
+        </article>`;
+    }).join('');
+    weakPanelHtml = `
+      <section class="panel weak-panel">
+        <div class="panel-head">
+          <h2>你的薄弱点</h2>
+          <span class="count">${weakAreas.length}</span>
+        </div>
+        <p class="panel-sub">来自你最近的挑战记录。先补这些，整体能力画像提升最快。</p>
+        <div class="weak-list">${weakItems}</div>
+      </section>`;
+  }
 
   root.innerHTML = `
     <div class="page-head">
@@ -215,13 +287,14 @@ export function renderPath(root, handlers = {}) {
     </section>
 
     ${completeBanner}
+    ${weakPanelHtml}
 
     <section class="panel">
       <div class="panel-head">
         <h2>现在就能挑战</h2>
-        <span class="count">${ready.length}</span>
+        <span class="count">${shownReady.length}${ready.length > shownReady.length ? ` / ${ready.length}` : ''}</span>
       </div>
-      <p class="panel-sub">这些星的前置条件已经满足，按方向相关度与解锁潜力排序。</p>
+      <p class="panel-sub">只列出最值得挑战的 ${READY_LIMIT} 个。带黄色边框的是你的下一关。</p>
       <div class="target-list">${readyHtml}</div>
       ${ready.length > READY_LIMIT ? `<div class="list-more"><button class="btn ghost sm" data-action="expand" data-list="ready">${expanded.ready ? '收起列表' : `展开其余 ${ready.length - READY_LIMIT} 个`}</button></div>` : ''}
     </section>
@@ -231,7 +304,7 @@ export function renderPath(root, handlers = {}) {
         <h2>接下来会解锁</h2>
         <span class="count">${upcoming.length}</span>
       </div>
-      <p class="panel-sub">再点亮 1–2 颗相关星星，就能把这些节点纳入可挑战范围。</p>
+      <p class="panel-sub">再点亮 1–2 颗相关星星，这些节点就会变成可挑战的关卡。</p>
       <div class="upcoming-list">${upcomingHtml}</div>
       ${upcoming.length > UPCOMING_LIMIT ? `<div class="list-more"><button class="btn ghost sm" data-action="expand" data-list="upcoming">${expanded.upcoming ? '收起列表' : `展开其余 ${upcoming.length - UPCOMING_LIMIT} 个`}</button></div>` : ''}
     </section>
