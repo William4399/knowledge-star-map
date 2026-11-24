@@ -7,6 +7,7 @@
 <meta name="description" content="知识星图：面向软件工程学生的可视化知识图谱与能力验证工具。点亮知识点，生成成长路径与能力档案。">
 <title>知识星图 · 软件工程能力星图</title>
 <link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="assets/mark-compact.svg">
 <link rel="icon" type="image/png" href="assets/icon-192.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -29,7 +30,7 @@
 
   <header class="topbar">
     <a class="brand" href="#graph" aria-label="知识星图首页">
-      <span class="brand-mark" aria-hidden="true">✦</span>
+      <img class="brand-mark" src="assets/mark-compact.svg" alt="" aria-hidden="true" width="22" height="22">
       <span class="brand-text">
         <b>知识星图</b>
         <em>SOFTWARE ENGINEERING · CS2023</em>
@@ -105,10 +106,14 @@
 <div id="modal-root"></div>
 
 <div id="boot" class="boot">
+  <div class="boot-mesh" aria-hidden="true"></div>
   <div class="boot-inner">
-    <div class="boot-mark" aria-hidden="true">✦</div>
+    <div class="boot-emblem" aria-hidden="true">
+      <img src="assets/mark.svg" alt="" width="104" height="104">
+    </div>
+    <p class="boot-eyebrow">软件工程 · 知识体系</p>
     <h1>知识星图</h1>
-    <p>正在连接星空…</p>
+    <p class="boot-status">正在连接星空…</p>
     <div class="boot-bar" aria-hidden="true"><i></i></div>
   </div>
 </div>

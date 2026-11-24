@@ -26,6 +26,25 @@ function glow(ctx, x, y, r, color) {
   ctx.fillRect(x - r, y - r, r * 2, r * 2);
 }
 
+function drawMark(ctx, cx, cy, R) {
+  const prevAlpha = ctx.globalAlpha;
+  const prevColor = ctx.fillStyle;
+  for (let arm = 0; arm < 2; arm++) {
+    for (let i = 0; i < 30; i++) {
+      const t = Math.pow((i + 0.5) / 30, 0.72);
+      const th = arm * Math.PI + t * 0.95 * Math.PI * 2;
+      const r = (0.1 + 0.84 * t) * R;
+      ctx.globalAlpha = prevAlpha * (0.45 + 0.55 * (1 - t));
+      ctx.fillStyle = t < 0.45 ? '#eaf4ff' : '#a9cdfb';
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(th) * r, cy + Math.sin(th) * r, Math.max(0.55, 1.45 - t), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = prevAlpha;
+  ctx.fillStyle = prevColor;
+}
+
 function drawHeatmap(ctx, x, y, size, gap, cells) {
   const palette = [
     'rgba(255,255,255,0.05)',
@@ -140,7 +159,8 @@ function draw(canvas, data) {
   ctx.textAlign = 'left';
   ctx.font = `500 19px ${FONT}`;
   ctx.fillStyle = 'rgba(160,190,230,0.72)';
-  ctx.fillText('✦  知识星图 · KNOWLEDGE STAR MAP', M, 96);
+  drawMark(ctx, M + 8, 89, 9);
+  ctx.fillText('知识星图 · KNOWLEDGE STAR MAP', M + 26, 96);
   ctx.textAlign = 'right';
   ctx.font = `400 17px ${FONT}`;
   ctx.fillStyle = 'rgba(130,150,178,0.75)';

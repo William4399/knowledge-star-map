@@ -1,0 +1,76 @@
+{
+  "name": "knowledge-star-map",
+  "version": "1.0.0",
+  "description": "知识星图 · 软件工程知识体系导航",
+  "main": "main.js",
+  "author": "许耀楠",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "cn.edu.ksm.starmap",
+    "productName": "知识星图",
+    "directories": {
+      "output": "../desktop-dist",
+      "buildResources": "."
+    },
+    "files": [
+      "main.js",
+      "icon.ico",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../",
+        "to": "app",
+        "filter": [
+          "**/*",
+          "!desktop/**",
+          "!desktop-dist/**",
+          "!node_modules/**",
+          "!tmp-questions/**",
+          "!.git/**",
+          "!.trae-html-share-packages/**",
+          "!.screenshots/**",
+          "!tools/**",
+          "!**/*.docx",
+          "!**/*.ps1",
+          "!verify_graph.py",
+          "!*.md",
+          "!.token"
+        ]
+      }
+    ],
+    "win": {
+      "icon": "icon.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "知识星图.exe"
+    },
+    "nsis": {
+      "artifactName": "知识星图-安装程序.exe",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "知识星图",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

@@ -1,7 +1,7 @@
 /* 知识星图 Service Worker：网络优先 + 缓存兜底，保证断网时仍可打开与学习 */
-const CACHE = 'ksm-shell-v3';
+const CACHE = 'ksm-shell-v4';
 const FALLBACK = './index.html';
-const SHELL = ['./index.html', './manifest.json', './css/style.css', './assets/icon-192.png', './vendor/fonts/noto-sans-sc.woff2'];
+const SHELL = ['./index.html', './manifest.json', './css/style.css', './assets/icon-192.png', './assets/mark.svg', './vendor/fonts/noto-sans-sc.woff2'];
 
 self.addEventListener('install', event => {
   event.waitUntil(

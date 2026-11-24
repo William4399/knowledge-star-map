@@ -556,6 +556,8 @@ function openOnboardingFlow() {
 /* ============ 启动 ============ */
 function showBootError(message) {
   if (!bootEl) return;
+  bootEl.querySelector('.boot-intro-canvas')?.remove();
+  bootEl.classList.remove('intro-armed');
   bootEl.innerHTML = `
     <div class="boot-inner">
       <div class="boot-mark">✦</div>
@@ -574,6 +576,15 @@ function registerServiceWorker() {
 async function boot() {
   load();
   registerServiceWorker();
+
+  // 启动动画与数据加载并行；动画跑到收尾才开始揭示界面
+  let introPromise = null;
+  if (bootEl) {
+    introPromise = import('./intro.js')
+      .then(mod => mod.playIntro({ host: bootEl, emblem: bootEl.querySelector('.boot-emblem') }))
+      .catch(() => { bootEl.classList.add('stage-on'); });
+  }
+
   try {
     await Promise.all([loadData(), loadKnowledgeBase()]);
   } catch (err) {
@@ -581,6 +592,13 @@ async function boot() {
     showBootError(err.message || '数据加载失败');
     return;
   }
+  if (introPromise) {
+    // 兜底：标签页在后台时 rAF 不触发，最多等 5.4s 就继续揭示
+    await Promise.race([introPromise, new Promise(resolve => setTimeout(resolve, 5400))]);
+    // 图标接管后停留片刻，让观众看清完整的星旋，再进入星图
+    await new Promise(resolve => setTimeout(resolve, 700));
+  }
+  if (bootEl) bootEl.classList.add('stage-on');
 
   // 背景优先用 WebGL 星空；加载失败或 WebGL 不可用时回退到原来的 canvas 星空
   try {
