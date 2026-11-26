@@ -9,20 +9,20 @@ import { UnrealBloomPass } from '../vendor/three/examples/jsm/postprocessing/Unr
 import { OutputPass } from '../vendor/three/examples/jsm/postprocessing/OutputPass.js';
 import { reduceMotion } from './util.js';
 
-const FLY = 1.5;           // 从四周飞入
-const FORM = 1.45;         // 旋臂收紧、停止自转
-const HOLD = 0.9;          // 停留
-const FADE = 0.5;          // 与原图标交叉淡出
+const FLY = 1.7;           // 从四周飞入
+const FORM = 1.35;         // 旋臂收紧、停止自转
+const HOLD = 0.95;         // 停留
+const FADE = 0.55;         // 与原图标交叉淡出
 const TOTAL = FLY + FORM + HOLD;
 
-// 拖尾：每个粒子额外渲染 3 个时间滞后的副本，形成流线
-const TRAILS = [0, 0.05, 0.1, 0.16];
-const TRAIL_SIZE = [1, 0.82, 0.62, 0.44];
-const TRAIL_ALPHA = [1, 0.58, 0.34, 0.18];
+// 拖尾：每个粒子额外渲染 4 个时间滞后的副本，形成连续流线
+const TRAILS = [0, 0.045, 0.1, 0.165, 0.24];
+const TRAIL_SIZE = [1, 0.84, 0.66, 0.46, 0.28];
+const TRAIL_ALPHA = [1, 0.55, 0.3, 0.15, 0.07];
 
-const TURNS = 0.95;
-const R0 = 0.1;
-const R1 = 0.94;
+const TURNS = 1.05;
+const R0 = 0.17;
+const R1 = 0.95;
 
 function spiralTargets(count, radius) {
   const list = [];
@@ -36,7 +36,8 @@ function spiralTargets(count, radius) {
         x: Math.cos(theta) * r,
         y: Math.sin(theta) * r,
         z: (Math.random() - 0.5) * 10,
-        t
+        t,
+        theta
       });
     }
   }
@@ -45,16 +46,19 @@ function spiralTargets(count, radius) {
 
 function makeGeometry(width, height, markSize) {
   const small = width * height < 1.6e6;
-  const armCount = small ? 900 : 1500;
-  const dustCount = small ? 260 : 420;
-  const coreCount = small ? 150 : 260;
+  const armCount = small ? 950 : 1600;
+  const dustCount = small ? 170 : 280;
+  const ringCount = small ? 100 : 140;
+  const sparkCount = small ? 24 : 36;
   const targets = spiralTargets(armCount, markSize * 0.46);
+  const armRadius = markSize * 0.46;
 
-  const base = targets.length + dustCount + coreCount;
+  const base = targets.length + dustCount + ringCount + sparkCount;
   const total = base * TRAILS.length;
   const pos = new Float32Array(total * 3);
   const target = new Float32Array(total * 3);
   const from = new Float32Array(total * 3);
+  const ctrl = new Float32Array(total * 3);
   const delay = new Float32Array(total);
   const size = new Float32Array(total);
   const color = new Float32Array(total * 3);
@@ -67,63 +71,73 @@ function makeGeometry(width, height, markSize) {
   const c = new THREE.Color();
 
   for (let b = 0; b < base; b++) {
-    const isCore = b >= targets.length + dustCount;
-    const isDust = b >= targets.length && !isCore;
-    let tx, ty, tz, tone;
-    if (isCore) {
-      const a = Math.random() * Math.PI * 2;
-      const r = markSize * 0.46 * Math.pow(Math.random(), 1.6) * 0.42;
-      tx = Math.cos(a) * r;
-      ty = Math.sin(a) * r;
-      tz = (Math.random() - 0.5) * 6;
-      tone = -1;
+    const isArm = b < targets.length;
+    const isDust = !isArm && b < targets.length + dustCount;
+    const isRing = !isArm && !isDust && b < targets.length + dustCount + ringCount;
+    let tx, ty, tz, ta, tone, d, s;
+
+    if (isArm) {
+      const p = targets[b];
+      tx = p.x; ty = p.y; tz = p.z; ta = p.theta; tone = p.t;
+      // 波沿旋臂流动：臂尖先动，越靠内越晚
+      d = (1 - tone) * 0.4 + Math.random() * 0.1;
+      // 内侧粒子更小，避免中心堆积
+      s = 1.2 + (1 - tone) * 1.9 + Math.random() * 0.7;
+      if (Math.random() < 0.06) c.setHex(0xffc79a);
+      else if (tone < 0.25) c.setHex(0xf2f8ff);
+      else if (tone < 0.6) c.setHex(0xa9cbff);
+      else c.setHex(0x8f7ef0);
     } else if (isDust) {
       const a = Math.random() * Math.PI * 2;
-      const r = markSize * (0.5 + Math.random() * 0.75);
-      tx = Math.cos(a) * r;
-      ty = Math.sin(a) * r;
-      tz = (Math.random() - 0.5) * 14;
+      const r = markSize * (0.55 + Math.random() * 0.8);
+      tx = Math.cos(a) * r; ty = Math.sin(a) * r; ta = a; tz = (Math.random() - 0.5) * 20;
       tone = 2;
+      d = Math.random() * 0.5;
+      s = 0.9 + Math.random() * 0.9;
+      c.setHex(Math.random() < 0.25 ? 0x8fa4cc : 0x6f7fa8);
+    } else if (isRing) {
+      // 内圈：环状目标，中心留空，避免光团
+      const k = (b - targets.length - dustCount) / ringCount;
+      const a = k * Math.PI * 2 + (Math.random() - 0.5) * 0.04;
+      const r = armRadius * (0.30 + Math.random() * 0.05);
+      tx = Math.cos(a) * r; ty = Math.sin(a) * r; ta = a; tz = (Math.random() - 0.5) * 6;
+      tone = 1;
+      d = 0.34 + Math.random() * 0.12;
+      s = 1.7 + Math.random() * 0.8;
+      c.setHex(Math.random() < 0.3 ? 0xffffff : 0xdfeaff);
     } else {
-      const p = targets[b];
-      tx = p.x;
-      ty = p.y;
-      tz = p.z;
-      tone = p.t;
+      // 中心一颗小亮核，数量少、体积小
+      const a = Math.random() * Math.PI * 2;
+      const r = armRadius * Math.pow(Math.random(), 1.8) * 0.1;
+      tx = Math.cos(a) * r; ty = Math.sin(a) * r; ta = a; tz = (Math.random() - 0.5) * 4;
+      tone = 1;
+      d = 0.36 + Math.random() * 0.1;
+      s = 2.0 + Math.random() * 1.1;
+      c.setHex(0xffffff);
     }
 
-    const a = Math.random() * Math.PI * 2;
-    const r = maxR * (0.72 + Math.random() * 0.55);
-    const fx = Math.cos(a) * r;
-    const fy = Math.sin(a) * r;
-    const fz = (Math.random() - 0.5) * 260;
+    // 沿弧线飞入：起点角度在目标角度前方 lead 弧度，沿极坐标螺旋收拢
+    const lead = isArm ? (0.85 + Math.random() * 0.75) * Math.PI : Math.random() * 1.2 * Math.PI;
+    const a0 = ta + lead;
+    const r0 = maxR * (0.78 + Math.random() * 0.5);
+    const rT = Math.hypot(tx, ty);
+    const aC = ta + lead * 0.55;
+    const rC = (r0 + rT) * 0.55;
+    const fz0 = (Math.random() - 0.5) * 240;
 
-    const d = Math.random() * 0.4;
-    const s = isCore ? 2.4 + Math.random() * 1.6
-      : isDust ? 1 + Math.random()
-        : 1.5 + (1 - tone) * 2.2 + Math.random() * 0.9;
-
-    if (isCore) c.setHex(0xffffff);
-    else if (Math.random() < 0.06) c.setHex(0xffc79a);
-    else if (tone < 0.3) c.setHex(0xeaf4ff);
-    else if (tone < 0.66) c.setHex(0xb0d4ff);
-    else c.setHex(0x96c2ff);
+    const fx = Math.cos(a0) * r0, fy = Math.sin(a0) * r0;
+    const cx = Math.cos(aC) * rC, cy = Math.sin(aC) * rC;
 
     const sd = Math.random() * 6.283;
 
     for (let k = 0; k < TRAILS.length; k++) {
       const i = b * TRAILS.length + k;
-      target[i * 3] = tx;
-      target[i * 3 + 1] = ty;
-      target[i * 3 + 2] = tz;
-      from[i * 3] = fx;
-      from[i * 3 + 1] = fy;
-      from[i * 3 + 2] = fz;
+      target[i * 3] = tx; target[i * 3 + 1] = ty; target[i * 3 + 2] = tz;
+      from[i * 3] = fx; from[i * 3 + 1] = fy; from[i * 3 + 2] = fz0;
+      ctrl[i * 3] = cx; ctrl[i * 3 + 1] = cy; ctrl[i * 3 + 2] = (fz0 + tz) * 0.5;
       delay[i] = d;
       size[i] = s;
-      color[i * 3] = c.r;
-      color[i * 3 + 1] = c.g;
-      color[i * 3 + 2] = c.b;
+      color[i * 3] = c.r; color[i * 3 + 1] = c.g; color[i * 3 + 2] = c.b;
       seed[i] = sd;
       trail[i] = TRAILS[k];
       trailSize[i] = TRAIL_SIZE[k];
@@ -135,6 +149,7 @@ function makeGeometry(width, height, markSize) {
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geo.setAttribute('aTarget', new THREE.BufferAttribute(target, 3));
   geo.setAttribute('aFrom', new THREE.BufferAttribute(from, 3));
+  geo.setAttribute('aCtrl', new THREE.BufferAttribute(ctrl, 3));
   geo.setAttribute('aDelay', new THREE.BufferAttribute(delay, 1));
   geo.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
   geo.setAttribute('aColor', new THREE.BufferAttribute(color, 3));
@@ -149,6 +164,7 @@ function makeGeometry(width, height, markSize) {
 const VERT = `
 attribute vec3 aTarget;
 attribute vec3 aFrom;
+attribute vec3 aCtrl;
 attribute float aDelay;
 attribute float aSize;
 attribute vec3 aColor;
@@ -175,13 +191,10 @@ void main() {
   float cs = cos(uSpin);
   float sn = sin(uSpin);
   vec3 tgt = vec3(aTarget.x * cs - aTarget.y * sn, aTarget.x * sn + aTarget.y * cs, aTarget.z) * uScale;
+  vec3 cpt = vec3(aCtrl.x * cs - aCtrl.y * sn, aCtrl.x * sn + aCtrl.y * cs, aCtrl.z) * uScale;
 
-  vec3 pos = mix(aFrom, tgt, e);
-  vec2 delta = tgt.xy - aFrom.xy;
-  float dist = max(0.001, length(delta));
-  vec2 dir = delta / dist;
-  float arc = sin(p * 3.1415926) * 0.13 * dist;
-  pos.xy += vec2(-dir.y, dir.x) * arc;
+  // 二次贝塞尔弧线飞入，轨迹沿极坐标螺旋收拢，流线感更强
+  vec3 pos = mix(mix(aFrom, cpt, e), mix(cpt, tgt, e), e);
 
   vAlpha = mix(0.35, 1.0, e) * (0.62 + 0.38 * sin(uTime * 2.2 + aSeed * 6.283)) * aTrailAlpha;
   vColor = aColor;
@@ -281,7 +294,7 @@ export function playIntro({ host, emblem } = {}) {
   composer.setPixelRatio(dpr);
   composer.setSize(width, height);
   composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(width, height), 0.9, 0.62, 0.08);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(width, height), 0.55, 0.55, 0.22);
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
 
@@ -336,10 +349,15 @@ export function playIntro({ host, emblem } = {}) {
     if (t <= FLY) {
       material.uniforms.uSpin.value = 2.9;
       material.uniforms.uScale.value = 2.4 - 0.85 * (t / FLY);
-    } else {
+    } else if (t <= FLY + FORM) {
       const k = Math.min(1, (t - FLY) / FORM);
       material.uniforms.uSpin.value = 2.9 * (1 - ease(k));
       material.uniforms.uScale.value = 1.55 - 0.55 * ease(k);
+    } else {
+      // 停留阶段：轻微呼吸 + 缓慢转动，保持流动感
+      const k = (t - FLY - FORM) / HOLD;
+      material.uniforms.uSpin.value = -0.14 * k;
+      material.uniforms.uScale.value = 1 + 0.02 * Math.sin(t * 2.6);
     }
 
     composer.render();
