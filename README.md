@@ -346,6 +346,19 @@ python verify_graph.py
 
 部署：纯静态资源，可直接托管在 GitHub Pages / 任意静态服务器。
 
+### 安卓端（APK）
+
+`android/` 是原生 WebView 壳工程，构建前会自动把本目录的网页资源同步进 APK，因此网页仍是唯一内容源。
+
+```powershell
+# 需要 JDK 17 与 Android SDK 34
+$env:JAVA_HOME="<JDK 17 路径>"
+$env:ANDROID_HOME="<Android SDK 路径>"
+.\android\gradlew.bat -p android assembleDebug
+```
+
+产物：`android/app/build/outputs/apk/debug/app-debug.apk`。模拟器建议加 `-gpu swiftshader_indirect` 启动，避免 Windows 上 GPU 驱动崩溃。
+
 ---
 
 ## 十二、文件结构
@@ -383,6 +396,7 @@ temp_20261123_01/
 │   └── apple-touch-icon.png # iOS 主屏图标 180
 ├── manifest.json           # PWA 清单：名称、图标、主题色、快捷入口
 ├── sw.js                   # Service Worker：网络优先 + 缓存兜底
+├── android/                # 安卓 WebView 壳工程：构建前同步网页资源
 └── README.md               # 本文件
 ```
 
@@ -532,3 +546,4 @@ temp_20261123_01/
 | v2.0 | 学习轨迹：个人主页新增近 12 周点亮热力图、活跃天数、最长连续天数与最近点亮列表；左右两栏排版，移动端自动堆叠 |
 | v2.1 | 安装与离线：新增 Manifest、192/512/180 图标与 Service Worker（网络优先 + 缓存兜底）；「存档与设置」提供安装入口，浏览器不支持时给出菜单引导；安装后可直接进入计划 / 档案页 |
 | v2.2 | 分享卡升级：能力档案卡加入近 12 周学习轨迹（迷你热力图、活跃天数、最长连续、近 7 天点亮），文字摘要同步包含活跃度；重新平衡 1080×1350 版式 |
+| v2.3 | 安卓端：新增 WebView 壳工程与 APK 构建；星云背景按屏幕宽高比采样，修复竖屏被横向压扁的问题 |

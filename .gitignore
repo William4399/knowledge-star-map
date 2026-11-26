@@ -24,9 +24,9 @@ tmp-questions/
 # 依赖与本地工具环境
 node_modules/
 
-# 桌面端构建产物（exe 体积大，不纳入代码仓库）
+# 桌面端（已从仓库移除，仅保留本地源码；exe 产物不入库）
+desktop/
 desktop-dist/
-desktop/*.log
 
 # 本地凭据
 .token

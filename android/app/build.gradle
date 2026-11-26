@@ -1,0 +1,52 @@
+plugins {
+    id 'com.android.application'
+}
+
+// 网页工程根目录（本 Gradle 工程位于 <网页工程>/android）
+def webRoot = file("$projectDir/../..")
+def wwwDir = file("$projectDir/src/main/assets/www")
+
+android {
+    namespace 'cn.knowledgestar.map'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "cn.knowledgestar.map"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// 每次构建前把网页资源同步进 assets/www，改动网页后直接 Run 即可生效
+tasks.register("syncWeb", Copy) {
+    from(webRoot) {
+        include 'index.html'
+        include 'manifest.json'
+        include 'sw.js'
+        include 'force-graph.min.js'
+        include 'star-data.json'
+        include 'css/**'
+        include 'js/**'
+        include 'data/**'
+        include 'assets/**'
+        include 'vendor/**'
+    }
+    into wwwDir
+}
+
+tasks.named("preBuild") {
+    dependsOn "syncWeb"
+}

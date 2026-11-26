@@ -55,7 +55,10 @@ float bolt(vec2 uv, vec2 c, float rx, float ry, float period, float offset, floa
 
 void main() {
   vec2 uv = vUv;
-  vec2 p = uv * vec2(3.0, 1.9);
+  // 按屏幕宽高比修正采样：横向固定 3.0 个单位，纵向随宽高比换算。
+  // 这样横屏时与原效果完全一致，竖屏(手机)时星云不会被横向压扁。
+  float aspect = max(uRes.x / max(uRes.y, 1.0), 0.0001);
+  vec2 p = uv * vec2(3.0, 3.0 / aspect);
   float t = uTime * 0.015;
 
   float warp = fbm(p * 0.65 + vec2(t, -t * 0.7));
