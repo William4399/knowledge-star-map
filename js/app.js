@@ -19,20 +19,6 @@ import { openNodeList } from './nodelist.js';
 import { escapeHtml, toast, confirmDialog } from './util.js';
 import { loadKnowledgeBase, getLearningGuides, QuestionBank, CHALLENGE_SIZE } from './kb.js';
 
-/* 软件渲染（模拟器/无 GPU）下关闭持续 WebGL：只保留一次静态星云 + 2D 星空 */
-const softwareGL = (() => {
-  try {
-    const c = document.createElement('canvas');
-    const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
-    if (!gl) return true;
-    const ext = gl.getExtension('WEBGL_debug_renderer_info');
-    const renderer = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : '';
-    return /swiftshader|llvmpipe|software/i.test(String(renderer));
-  } catch (err) {
-    return true;
-  }
-})();
-
 const views = {
   graph: document.getElementById('view-graph'),
   path: document.getElementById('view-path'),
@@ -593,7 +579,7 @@ async function boot() {
 
   // 启动动画与数据加载并行；动画跑到收尾才开始揭示界面
   let introPromise = null;
-  if (bootEl && !softwareGL) {
+  if (bootEl) {
     introPromise = import('./intro.js')
       .then(mod => mod.playIntro({ host: bootEl, emblem: bootEl.querySelector('.boot-emblem') }))
       .catch(() => { bootEl.classList.add('stage-on'); });
@@ -617,7 +603,7 @@ async function boot() {
   // 背景优先用 WebGL 星空；加载失败或 WebGL 不可用时回退到原来的 canvas 星空
   try {
     const mod = await import('./space.js');
-    if (!softwareGL && mod.initSpace(document.getElementById('space-bg'))) {
+    if (mod.initSpace(document.getElementById('space-bg'))) {
       spaceApi = mod;
       document.getElementById('starfield')?.remove();
     }
@@ -629,7 +615,7 @@ async function boot() {
   // 程序化星云层：WebGL 不可用时保留纯星空
   try {
     const nb = await import('./nebula.js');
-    nebulaApi = nb.initNebulaFx(document.getElementById('nebula-fx'), { staticFrame: softwareGL });
+    nebulaApi = nb.initNebulaFx(document.getElementById('nebula-fx'));
     if (nebulaApi) nebulaApi.setNebulaFxActive(currentView === 'graph' && !document.hidden);
   } catch (err) {
     console.warn('程序化星云初始化失败，继续使用星空背景', err);

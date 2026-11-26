@@ -7,12 +7,11 @@ import { EffectComposer } from '../vendor/three/examples/jsm/postprocessing/Effe
 import { RenderPass } from '../vendor/three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from '../vendor/three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from '../vendor/three/examples/jsm/postprocessing/OutputPass.js';
-import { reduceMotion, isMobile } from './util.js';
+import { reduceMotion } from './util.js';
 
 const BG_COLOR = 0x000000;
-const STAR_COUNT = isMobile ? 900 : 2200;
+const STAR_COUNT = 2200;
 const METEOR_COUNT = 3;
-const FRAME_INTERVAL = 1000 / 30;
 
 let renderer = null;
 let scene = null;
@@ -212,9 +211,7 @@ function frame() {
     rafId = 0;
     return;
   }
-  rafId = requestAnimationFrame(frame);
   const now = performance.now();
-  if (now - lastFrame < FRAME_INTERVAL) return;
   const dt = Math.min(0.05, (now - lastFrame) / 1000);
   lastFrame = now;
   elapsed += dt;
@@ -229,8 +226,8 @@ function frame() {
   camera.lookAt(camOffset.x * 0.25, camOffset.y * 0.25, -600);
 
   updateMeteors(dt);
-  if (composer) composer.render();
-  else renderer.render(scene, camera);
+  composer.render();
+  rafId = requestAnimationFrame(frame);
 }
 
 /* ============ 对外接口 ============ */
@@ -248,7 +245,7 @@ export function initSpace(canvas) {
     return false;
   }
 
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 1.5));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   renderer.setClearColor(BG_COLOR, 1);
 
@@ -260,21 +257,18 @@ export function initSpace(canvas) {
   buildStars();
   buildMeteors();
 
-  // 移动端跳过全屏泛光：多趟模糊是星空层最大的开销，关闭后星星依旧可见
-  if (!isMobile) {
-    composer = new EffectComposer(renderer);
-    composer.setPixelRatio(renderer.getPixelRatio());
-    composer.setSize(window.innerWidth, window.innerHeight);
-    composer.addPass(new RenderPass(scene, camera));
-    const bloom = new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight),
-      0.85,
-      0.75,
-      0.62
-    );
-    composer.addPass(bloom);
-    composer.addPass(new OutputPass());
-  }
+  composer = new EffectComposer(renderer);
+  composer.setPixelRatio(renderer.getPixelRatio());
+  composer.setSize(window.innerWidth, window.innerHeight);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    0.85,
+    0.75,
+    0.62
+  );
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
 
   window.addEventListener('resize', resize);
   window.addEventListener('pointermove', e => {

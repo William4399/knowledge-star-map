@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { isMobile } from './util.js';
 
 /* 程序化星云：全屏 shader，任意分辨率不糊，可缓慢流动 */
 const VERT = `
@@ -36,7 +35,7 @@ float fbm(vec2 p) {
   float v = 0.0;
   float a = 0.5;
   mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
-  for (int i = 0; i < OCTAVES; i++) {
+  for (int i = 0; i < 5; i++) {
     v += a * noise(p);
     p = rot * p * 2.02;
     a *= 0.5;
@@ -127,7 +126,7 @@ let raf = 0;
 let running = false;
 let lastFrame = 0;
 let time = 0;
-const FRAME_INTERVAL = 1000 / (isMobile ? 24 : 30);
+const FRAME_INTERVAL = 1000 / 30;
 
 function resize() {
   if (!renderer) return;
@@ -152,8 +151,7 @@ function loop(now) {
 let scene = null;
 let camera = null;
 
-export function initNebulaFx(canvas, options = {}) {
-  const staticFrame = !!options.staticFrame;
+export function initNebulaFx(canvas) {
   try {
     renderer = new THREE.WebGLRenderer({
       canvas,
@@ -161,27 +159,18 @@ export function initNebulaFx(canvas, options = {}) {
       alpha: false,
       powerPreference: 'low-power'
     });
-    // 软件渲染下只画一帧低分辨率静态星云，避免每帧几十次噪声采样
-    renderer.setPixelRatio(staticFrame ? 0.55 : Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 1.25));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
     scene = new THREE.Scene();
     camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     material = new THREE.ShaderMaterial({
       vertexShader: VERT,
-      fragmentShader: FRAG.replace('OCTAVES', isMobile ? '3' : '5'),
+      fragmentShader: FRAG,
       uniforms: { uTime: { value: 0 }, uRes: { value: new THREE.Vector2() } },
       depthTest: false,
       depthWrite: false
     });
     scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
     resize();
-    if (staticFrame) {
-      renderer.render(scene, camera);
-      window.addEventListener('resize', () => {
-        resize();
-        renderer.render(scene, camera);
-      });
-      return { setNebulaFxActive() {} };
-    }
     window.addEventListener('resize', resize);
     return { setNebulaFxActive };
   } catch (err) {
