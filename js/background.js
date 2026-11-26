@@ -4,6 +4,8 @@ const canvas = document.getElementById('starfield');
 const ctx = canvas.getContext('2d');
 let bgStars = [];
 let running = false;
+let lastFrame = 0;
+const FRAME_INTERVAL = 1000 / 30;
 
 function build() {
   const w = window.innerWidth;
@@ -30,6 +32,9 @@ function build() {
 
 function draw(t) {
   if (!running) return;
+  requestAnimationFrame(draw);
+  if (t - lastFrame < FRAME_INTERVAL) return;
+  lastFrame = t;
   const w = canvas.width;
   const h = canvas.height;
   ctx.clearRect(0, 0, w, h);
@@ -48,7 +53,6 @@ function draw(t) {
     ctx.fill();
     ctx.shadowBlur = 0;
   }
-  requestAnimationFrame(draw);
 }
 
 export function setBackgroundActive(active) {

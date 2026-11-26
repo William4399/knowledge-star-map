@@ -1,5 +1,7 @@
 export const TAU = Math.PI * 2;
 export const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const isMobile = window.matchMedia('(max-width: 820px)').matches
+  || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 export const nowSec = () => (reduceMotion ? 0 : performance.now() / 1000);
 
 export function hexToRgba(hex, a) {
