@@ -3,6 +3,7 @@ import { getState, exportText, importText, resetAll, resetOnboarding } from './s
 import {
   TAU, escapeHtml, formatDate, toast, confirmDialog, downloadText
 } from './util.js';
+import { aiEnabled, currentProxyUrl, setProxyUrl } from './ai.js';
 
 let radarCache = null;
 
@@ -435,6 +436,17 @@ export function renderProfile(root, handlers = {}) {
       </div>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
       <p class="muted small">存档创建于 ${formatDate(state.createdAt)} · 最近更新 ${formatDate(state.updatedAt)}</p>
+
+      <div class="ai-config">
+        <label class="config-label" for="ai-proxy">AI 判分代理</label>
+        <div class="ai-config-row">
+          <input id="ai-proxy" class="short-input" type="url" spellcheck="false"
+                 placeholder="https://…workers.dev 或 http://笔记本IP:8893"
+                 value="${escapeHtml(currentProxyUrl())}">
+          <button class="btn ghost sm" data-action="ai-save">保存</button>
+        </div>
+        <p class="input-hint ai-status">${aiEnabled() ? '已启用 AI 语义判分' : '当前为本地关键词判分'} · 演示时可在笔记本运行 proxy/local-proxy.mjs，然后填 http://笔记本IP:8893</p>
+      </div>
     </section>
 
     <p class="page-foot">知识星图 · CS2023 / SWEBOK v4 对齐 · 判分与推荐均在本地完成</p>`;
@@ -459,6 +471,19 @@ export function renderProfile(root, handlers = {}) {
       if (handlers.onShare) handlers.onShare();
     } else if (action === 'install') {
       if (handlers.onInstall) handlers.onInstall();
+    } else if (action === 'ai-save') {
+      const input = root.querySelector('#ai-proxy');
+      const url = input ? input.value.trim() : '';
+      if (url && !/^https?:\/\//i.test(url)) {
+        toast('代理地址需要以 http:// 或 https:// 开头', 'warn');
+        return;
+      }
+      setProxyUrl(url);
+      const statusEl = root.querySelector('.ai-status');
+      if (statusEl) statusEl.textContent = aiEnabled()
+        ? '已启用 AI 语义判分 · 地址 ' + url
+        : '当前为本地关键词判分 · 演示时可在笔记本运行 proxy/local-proxy.mjs，然后填 http://笔记本IP:8893';
+      toast(aiEnabled() ? 'AI 判分已启用' : '已恢复关键词判分', 'success');
     } else if (action === 'export') {
       const stamp = new Date().toISOString().slice(0, 10);
       downloadText(`知识星图-存档-${stamp}.json`, exportText());

@@ -175,17 +175,17 @@ Python / 线性代数 / 概率统计 → 机器学习 → 模型评估与实验
 
 - 配置后简答题由大模型按评分点判分：返回 0~1 连续得分、命中/缺失要点和中文评语；总分与点亮规则不变（AI 题得分 ≥ 0.6 视为该题达标）
 - 前端：[js/ai.js](js/ai.js) 提供 `aiEnabled()` / `gradeShortAnswer()`；[js/challenge.js](js/challenge.js) 的 `submit()` 中选择题仍本地判分，简答题优先 AI
-- 代理：[proxy/deepseek-worker.js](proxy/deepseek-worker.js)（Cloudflare Worker，OpenAI 兼容接口，模型 `deepseek-chat`）
-- **API Key 只存在 Worker 的 secret 中，不进入前端代码或 APK**
+- 配置入口：App「我的 → 存档与设置 → AI 判分代理」，改动即时生效，无需重新打包
+- **API Key 只存在代理服务端，不进入前端代码或 APK**
 
-部署步骤：
+两种部署方式：
 
-1. `npm i -g wrangler && wrangler login`
-2. `wrangler deploy proxy/deepseek-worker.js --name ksm-ai --compatibility-date 2026-01-01`
-3. `wrangler secret put DEEPSEEK_API_KEY`（粘贴你的 DeepSeek Key）
-4. 配置代理地址：改 `js/ai.js` 的 `DEFAULT_PROXY_URL`，或在控制台执行 `localStorage.setItem('ksm_ai_proxy', 'https://ksm-ai.<你的账号>.workers.dev')`
+1. **局域网演示（国内推荐）**：`workers.dev` 在国内被 GFW 按 SNI 封锁，手机上访问不稳定。演示前在笔记本运行：
+   - `DEEPSEEK_API_KEY=sk-你的key node proxy/local-proxy.mjs`（Windows PowerShell 用 `$env:DEEPSEEK_API_KEY="sk-..."; node proxy/local-proxy.mjs`）
+   - 手机连笔记本热点或同一 Wi-Fi，在「AI 判分代理」里填 `http://<笔记本IP>:8893`
+2. **Cloudflare Worker（海外/公网）**：`wrangler deploy proxy/deepseek-worker.js --name ksm-ai --compatibility-date 2026-01-01`，然后 `wrangler secret put DEEPSEEK_API_KEY`，在 App 里填 Worker 地址
 
-降级与隐私：未配置代理、断网、15 秒超时或返回格式错误时自动回退关键词判分；只发送题干、参考答案、评分关键词和学生作答文本，不发送个人资料或学习记录。
+降级与隐私：未配置代理、断网、15 秒超时或返回格式错误时自动回退关键词判分；网络故障后熔断 5 分钟直接走本地判分，避免反复等待；只发送题干、参考答案、评分关键词和学生作答文本，不发送个人资料或学习记录。
 
 ---
 

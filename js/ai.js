@@ -9,18 +9,44 @@
  * 2. 或浏览器控制台执行 localStorage.setItem('ksm_ai_proxy', 'https://你的域名.workers.dev')。
  */
 
-const DEFAULT_PROXY_URL = '';
+const DEFAULT_PROXY_URL = 'https://knowledge-star-map.2117841858.workers.dev';
+
+const STORAGE_KEY = 'ksm_ai_proxy';
 
 function proxyUrl() {
   try {
-    return localStorage.getItem('ksm_ai_proxy') || DEFAULT_PROXY_URL;
+    const custom = localStorage.getItem(STORAGE_KEY);
+    if (custom) return custom;
   } catch {
-    return DEFAULT_PROXY_URL;
+    /* localStorage 不可用时用默认 */
+  }
+  return DEFAULT_PROXY_URL;
+}
+
+/** 当前生效的代理地址（空字符串表示未配置） */
+export function currentProxyUrl() {
+  return proxyUrl();
+}
+
+/** 自定义代理地址（局域网演示时填 http://笔记本IP:8892）；传空字符串恢复默认 */
+export function setProxyUrl(url) {
+  try {
+    if (url) localStorage.setItem(STORAGE_KEY, url);
+    else localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* 忽略 */
   }
 }
 
+/** 熔断：网络不可达或超时后 5 分钟内直接走本地判分，避免每次提交干等 */
+let brokenUntil = 0;
+
 export function aiEnabled() {
-  return !!proxyUrl();
+  return !!proxyUrl() && Date.now() >= brokenUntil;
+}
+
+function markBroken() {
+  brokenUntil = Date.now() + 5 * 60 * 1000;
 }
 
 export const AI_TIMEOUT_MS = 15000;
@@ -54,6 +80,10 @@ export async function gradeShortAnswer({ stem, reference, keywords, answer }) {
       feedback: typeof data.feedback === 'string' ? data.feedback : '',
       ai: true
     };
+  } catch (err) {
+    // 网络不可达 / 超时：熔断 5 分钟，期间直接用本地判分
+    if (err && (err.name === 'AbortError' || err instanceof TypeError)) markBroken();
+    throw err;
   } finally {
     clearTimeout(timer);
   }
