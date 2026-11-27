@@ -6,15 +6,54 @@
  * POST https://ksm-ai-d0g3hv6kib4574433-1542918062.ap-shanghai.app.tcloudbase.com/grade
  *
  * 关键点：API Key 只存在此函数的环境变量里，不进前端、不进仓库。
+ * 防护：环境变量 KSM_ACCESS_TOKEN 作为访问口令（前端请求头 X-KSM-Token 携带），
+ * 另按客户端 IP 做每分钟限流，超限返回 429。
  */
 
 const KEY = process.env.DEEPSEEK_API_KEY || '';
+const ACCESS_TOKEN = process.env.KSM_ACCESS_TOKEN || '';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type'
+  'Access-Control-Allow-Headers': 'Content-Type, X-KSM-Token'
 };
+
+/* ---------- 按 IP 限流（单个函数实例内的滑动窗口，冷启动会重置） ---------- */
+const WINDOW_MS = 60 * 1000;
+const PER_IP_LIMIT = 12;  // 每个 IP 每分钟最多 12 次判分
+const GLOBAL_LIMIT = 80;  // 单个实例每分钟总上限，防止集体刷
+
+const ipHits = new Map();
+let globalStart = Date.now();
+let globalCount = 0;
+
+function clientIp(event) {
+  const headers = (event && event.headers) || {};
+  const fwd = headers['x-forwarded-for'] || headers['X-Forwarded-For'] || '';
+  if (fwd) return String(fwd).split(',')[0].trim();
+  const ctx = (event && event.requestContext) || {};
+  return ctx.sourceIp || (ctx.identity && ctx.identity.sourceIp) || 'unknown';
+}
+
+/** 返回空串表示放行，否则返回超限原因 */
+function rateLimited(ip) {
+  const now = Date.now();
+  if (now - globalStart >= WINDOW_MS) {
+    globalStart = now;
+    globalCount = 0;
+  }
+  globalCount++;
+  if (globalCount > GLOBAL_LIMIT) return 'busy';
+
+  const rec = ipHits.get(ip);
+  if (!rec || now - rec.start >= WINDOW_MS) {
+    ipHits.set(ip, { start: now, n: 1 });
+    return '';
+  }
+  rec.n++;
+  return rec.n > PER_IP_LIMIT ? 'ip' : '';
+}
 
 const SYSTEM_PROMPT = `你是一名严格而鼓励学生的软件工程课程阅卷老师。根据题干、参考答案和评分关键词，给学生的简答题作答打分。
 
@@ -38,6 +77,21 @@ exports.main = async (event) => {
 
   if (method === 'OPTIONS') {
     return { statusCode: 204, headers: CORS, body: '' };
+  }
+
+  if (ACCESS_TOKEN) {
+    const headers = event.headers || {};
+    let given = '';
+    for (const k of Object.keys(headers)) {
+      if (k.toLowerCase() === 'x-ksm-token') given = String(headers[k]);
+    }
+    if (given !== ACCESS_TOKEN) return respond(401, { error: 'invalid token' });
+  }
+
+  const ip = clientIp(event);
+  const limited = rateLimited(ip);
+  if (limited) {
+    return respond(429, { error: limited === 'busy' ? '服务繁忙，请稍后再试' : '请求过于频繁，请 1 分钟后再试' });
   }
 
   if (!KEY) return respond(500, { error: 'server key not configured' });

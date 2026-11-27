@@ -13,6 +13,9 @@ const DEFAULT_PROXY_URL = 'https://ksm-ai-d0g3hv6kib4574433-1542918062.ap-shangh
 
 const STORAGE_KEY = 'ksm_ai_proxy';
 
+/** 公网代理访问口令，需与云函数环境变量 KSM_ACCESS_TOKEN 一致（本地代理不校验） */
+const ACCESS_TOKEN = '83bc7233eafe45e2a03800c7c8a4e976';
+
 /** 从本机 / 局域网打开页面时，默认用同一台机器的 8893 端口做代理（配合 serve.mjs + local-proxy.mjs 零配置可用） */
 function sameHostProxy() {
   try {
@@ -100,7 +103,7 @@ export async function gradeShortAnswer({ stem, reference, keywords, answer }) {
     try {
       const resp = await fetch(base + '/grade', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-KSM-Token': ACCESS_TOKEN },
         body: JSON.stringify({ stem, reference, keywords, answer }),
         signal: ctrl.signal
       });

@@ -177,24 +177,25 @@ Python / 线性代数 / 概率统计 → 机器学习 → 模型评估与实验
 - 前端：[js/ai.js](js/ai.js) 提供 `aiEnabled()` / `gradeShortAnswer()`；[js/challenge.js](js/challenge.js) 的 `submit()` 中选择题仍本地判分，简答题优先 AI
 - 配置入口：App「我的 → 存档与设置 → AI 判分代理」，改动即时生效，无需重新打包
 - **API Key 只存在代理服务端，不进入前端代码或 APK**
+- **防护**：公网代理需要访问口令（请求头 `X-KSM-Token`，云函数环境变量 `KSM_ACCESS_TOKEN`），并按客户端 IP 限流（12 次/分钟，单实例总量 80 次/分钟），超限返回 429 并自动回退关键词判分
 
 三种部署方式：
 
 1. **公网代理（默认，零配置）**：已部署在腾讯云 CloudBase，前端内置为默认地址，克隆后直接打开即可用 AI 判分，无需填 Key：
    - 地址：`https://ksm-ai-d0g3hv6kib4574433-1542918062.ap-shanghai.app.tcloudbase.com`（`POST /grade`）
-   - 源码：[proxy/cloudbase/index.js](proxy/cloudbase/index.js)，环境变量 `DEEPSEEK_API_KEY` 存在云函数配置里
-   - 该地址只做代理，不包含 Key；如需换成自己的云函数，改 [js/ai.js](js/ai.js) 的 `DEFAULT_PROXY_URL` 或在 App 内填写
+   - 源码：[proxy/cloudbase/index.js](proxy/cloudbase/index.js)，环境变量 `DEEPSEEK_API_KEY`、`KSM_ACCESS_TOKEN` 存在云函数配置里
+   - 该地址只做代理，不包含 Key；如需换成自己的云函数，改 [js/ai.js](js/ai.js) 的 `DEFAULT_PROXY_URL` 与 `ACCESS_TOKEN` 或在 App 内填写
 2. **本机 / 局域网（离线兜底）**：克隆后直接双击 `start-demo.cmd`，或手动执行：
    ```bash
    node serve.mjs                 # 网页服务 http://localhost:8891
    node proxy/local-proxy.mjs     # AI 代理   http://localhost:8893
    ```
    - Key 放在 `proxy/.env`：`DEEPSEEK_API_KEY=sk-你的key`（该文件已被 git 忽略，不会入库）
-   - 公网代理不可达（断网 / 额度用尽）时会自动回退到**同一主机的 8893 端口**，无需手动切换
+   - 本地代理不校验口令，只允许本机 / 局域网访问；公网代理不可达（断网 / 额度用尽 / 被限流）时自动回退到**同一主机的 8893 端口**
    - 手机演示：连同一热点 / Wi-Fi，打开终端里打印的「局域网访问」地址即可
 3. **Cloudflare Worker（海外 / 公网）**：`wrangler deploy proxy/deepseek-worker.js --name ksm-ai --compatibility-date 2026-01-01`，然后 `wrangler secret put DEEPSEEK_API_KEY`。注意 `workers.dev` 域名在国内被封锁，仅适合海外访问或绑定自有域名
 
-> 公网代理地址一旦公开，任何人调用都会消耗你的 DeepSeek 额度；正式对外发布前建议加访问口令与按 IP 限流。
+> 口令写在仓库前端代码里，只能拦住随手扫描和直接调用；若要对外长期公开，建议定期更换 `KSM_ACCESS_TOKEN`（改云函数环境变量 + [js/ai.js](js/ai.js) 的 `ACCESS_TOKEN` 并重新推送），或改为每次会话签名的短期令牌。
 
 降级与隐私：未配置代理、断网、15 秒超时或返回格式错误时自动回退关键词判分；网络故障后熔断 5 分钟直接走本地判分，避免反复等待；只发送题干、参考答案、评分关键词和学生作答文本，不发送个人资料或学习记录。
 
@@ -588,3 +589,4 @@ temp_20261123_01/
 | v2.6 | AI 语义判分：新增 DeepSeek 代理（Cloudflare Worker，密钥仅在服务端）；简答题支持 AI 按评分点判分并给出评语，断网/未配置自动回退关键词判分 |
 | v2.7 | 零配置上手：新增 `serve.mjs`（Node 静态服务，打印局域网地址）与 `start-demo.cmd` 一键启动；前端自动把同主机 8893 当作 AI 代理，本机/局域网开箱即用；`proxy/.env` 存 Key 且不入库 |
 | v2.8 | 公网 AI 代理：腾讯云 CloudBase 云函数 + `/grade` HTTP 路由，前端内置为默认地址；队友克隆后无需配置即可用 AI 判分；公网不可达时自动回退本地 8893 代理 |
+| v2.9 | 公网代理防护：请求头 `X-KSM-Token` 访问口令 + 按 IP 每分钟限流（12 次/IP、80 次/实例），超限 429 并回退关键词判分 |

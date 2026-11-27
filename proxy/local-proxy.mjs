@@ -54,7 +54,7 @@ function send(res, status, data, cors) {
     ...(cors ? {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
+      'Access-Control-Allow-Headers': 'Content-Type, X-KSM-Token'
     } : {})
   });
   res.end(body);
@@ -63,7 +63,7 @@ function send(res, status, data, cors) {
 http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-KSM-Token');
 
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
   if (req.url.replace(/\/$/, '') !== '/grade' || req.method !== 'POST') {
