@@ -17,19 +17,20 @@ if errorlevel 1 (
 )
 
 if not exist "proxy\.env" (
-  echo 没有找到 proxy\.env，AI 判分需要 DeepSeek Key。
+  echo AI 判分默认走云端代理，无需任何配置。
+  echo 如想同时启用本地代理作为兜底，可粘贴自己的 DeepSeek Key；直接回车跳过。
   echo.
-  set /p INPUTKEY=请粘贴你的 DeepSeek API Key（直接回车则跳过 AI）:
+  set /p INPUTKEY=请粘贴 DeepSeek API Key（直接回车跳过）:
   if defined INPUTKEY (
     > "proxy\.env" echo DEEPSEEK_API_KEY=%INPUTKEY%
     echo 已保存到 proxy\.env（该文件不会提交到仓库）
   ) else (
-    echo 已跳过。页面仍可正常使用，简答题走关键词判分。
+    echo 已跳过。AI 判分仍使用云端代理。
   )
   echo.
 )
 
-echo 正在启动网页服务（8891）与 AI 代理（8893）...
+echo 正在启动网页服务（8891）与本地 AI 代理（8893，兜底用）...
 start "知识星图-网页" cmd /k node serve.mjs
 timeout /t 2 >nul
 start "知识星图-AI代理" cmd /k node proxy\local-proxy.mjs
