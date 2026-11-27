@@ -2,6 +2,7 @@ import { Data, nodeById, galaxyOf, questionsFor } from './data.js';
 import { getState, passChallenge, failChallenge } from './store.js';
 import { escapeHtml, toast } from './util.js';
 import { QuestionBank, getLearningGuides, CHALLENGE_SIZE } from './kb.js';
+import { aiEnabled, gradeShortAnswer } from './ai.js';
 
 let active = null;
 
@@ -254,7 +255,7 @@ export function openChallenge(nodeId, options = {}) {
     return { ok, score: ok ? 1 : Math.min(0.6, ratio * 0.6), hits, missing };
   }
 
-  function submit() {
+  async function submit() {
     capture();
     const unanswered = questions.findIndex((q, i) => local.answers[i] == null || local.answers[i] === '');
     if (unanswered !== -1) {
@@ -264,7 +265,33 @@ export function openChallenge(nodeId, options = {}) {
       return;
     }
 
-    const details = questions.map((q, i) => ({ q, ans: local.answers[i], ...scoreAnswer(q, local.answers[i]) }));
+    const useAI = aiEnabled();
+    if (useAI) {
+      body.innerHTML = `<div class="grading-wait">
+        <div class="spinner"></div>
+        <p>AI 正在按评分点判分，请稍候…</p>
+        <span>断网或超时会自动回退为关键词判分</span>
+      </div>`;
+    }
+
+    const details = await Promise.all(questions.map(async (q, i) => {
+      const ans = local.answers[i];
+      if (useAI && q.type === 'short') {
+        try {
+          const ai = await gradeShortAnswer({
+            stem: q.stem,
+            reference: q.reference || '',
+            keywords: q.keywords || [],
+            answer: String(ans || '')
+          });
+          // AI 给出 0~1 连续得分，60% 视为该题通过
+          return { q, ans, ...ai, ok: ai.score >= 0.6 };
+        } catch (err) {
+          // 网络失败/超时/代理未部署：回退关键词判分
+        }
+      }
+      return { q, ans, ...scoreAnswer(q, ans) };
+    }));
     const total = Math.round((details.reduce((sum, d) => sum + d.score, 0) / details.length) * 100);
     const allShortOk = details.every(d => d.q.type !== 'short' || d.ok);
     const passed = total >= threshold && allShortOk;
@@ -315,6 +342,7 @@ export function openChallenge(nodeId, options = {}) {
              ${d.hits.map(k => `<span class="kw hit">${escapeHtml(k)}</span>`).join('')}
              ${d.missing.map(k => `<span class="kw miss">${escapeHtml(k)}</span>`).join('')}
            </div>
+           ${d.ai && d.feedback ? `<p class="ai-feedback">AI 评语：${escapeHtml(d.feedback)}</p>` : ''}
            <p class="reference">参考：${escapeHtml(q.reference || '')}</p>`
         : `<p class="reference">正确答案：${String.fromCharCode(65 + q.answer)}. ${escapeHtml(q.options[q.answer])}</p>`;
 
@@ -322,7 +350,7 @@ export function openChallenge(nodeId, options = {}) {
         <div class="review-head">
           <span class="review-index">${i + 1}</span>
           ${q.type === 'short'
-            ? `<span class="review-score ${d.ok ? 'ok' : 'bad'}">命中 ${d.hits.length}/${q.keywords.length} 关键词</span>`
+            ? `<span class="review-score ${d.ok ? 'ok' : 'bad'}">${d.ai ? `AI 判分 ${Math.round(d.score * 100)}%` : `命中 ${d.hits.length}/${q.keywords.length} 关键词`}</span>`
             : `<span class="review-score ${d.ok ? 'ok' : 'bad'}">${d.ok ? '回答正确' : '回答错误'}</span>`}
         </div>
         <p class="review-stem">${escapeHtml(q.stem)}</p>

@@ -171,6 +171,22 @@ Python / 线性代数 / 概率统计 → 机器学习 → 模型评估与实验
 
 > 说明：判分在浏览器本地完成，题库与答案随静态资源下发，仅用于学习自测，不具备防作弊能力。
 
+### 7.1 AI 语义判分（DeepSeek，可选）
+
+- 配置后简答题由大模型按评分点判分：返回 0~1 连续得分、命中/缺失要点和中文评语；总分与点亮规则不变（AI 题得分 ≥ 0.6 视为该题达标）
+- 前端：[js/ai.js](js/ai.js) 提供 `aiEnabled()` / `gradeShortAnswer()`；[js/challenge.js](js/challenge.js) 的 `submit()` 中选择题仍本地判分，简答题优先 AI
+- 代理：[proxy/deepseek-worker.js](proxy/deepseek-worker.js)（Cloudflare Worker，OpenAI 兼容接口，模型 `deepseek-chat`）
+- **API Key 只存在 Worker 的 secret 中，不进入前端代码或 APK**
+
+部署步骤：
+
+1. `npm i -g wrangler && wrangler login`
+2. `wrangler deploy proxy/deepseek-worker.js --name ksm-ai --compatibility-date 2026-01-01`
+3. `wrangler secret put DEEPSEEK_API_KEY`（粘贴你的 DeepSeek Key）
+4. 配置代理地址：改 `js/ai.js` 的 `DEFAULT_PROXY_URL`，或在控制台执行 `localStorage.setItem('ksm_ai_proxy', 'https://ksm-ai.<你的账号>.workers.dev')`
+
+降级与隐私：未配置代理、断网、15 秒超时或返回格式错误时自动回退关键词判分；只发送题干、参考答案、评分关键词和学生作答文本，不发送个人资料或学习记录。
+
 ---
 
 ## 八、推荐与匹配算法
@@ -549,3 +565,4 @@ temp_20261123_01/
 | v2.3 | 安卓端：新增 WebView 壳工程与 APK 构建；星云背景按屏幕宽高比采样，修复竖屏被横向压扁的问题 |
 | v2.4 | 启动动画重做：粒子沿螺旋弧线飞入（二次贝塞尔路径），拖尾加长为 5 段；中心从实心光团改为空心环 + 小亮核；泛光收敛；星系图标重生成（空心内环、连续旋臂、金色点缀） |
 | v2.5 | 性能与排版：星图辉光/弧光/流光改为预渲染精灵贴图（视觉不变，减少每帧渐变创建）；WebView 静态资源允许缓存；移动端排版全面升级（正文 12.5–14px、标题加粗分级、行高放宽、辅助文字提亮） |
+| v2.6 | AI 语义判分：新增 DeepSeek 代理（Cloudflare Worker，密钥仅在服务端）；简答题支持 AI 按评分点判分并给出评语，断网/未配置自动回退关键词判分 |
