@@ -15,12 +15,26 @@
  */
 
 import http from 'node:http';
+import fs from 'node:fs';
 
-const KEY = process.env.DEEPSEEK_API_KEY || '';
+/** 优先读环境变量，其次读同目录 .env（该文件已被 git 忽略，不会进仓库） */
+let KEY = process.env.DEEPSEEK_API_KEY || '';
+if (!KEY) {
+  try {
+    const text = fs.readFileSync(new URL('./.env', import.meta.url), 'utf8');
+    const m = text.match(/^\s*DEEPSEEK_API_KEY\s*=\s*(.+)$/m);
+    if (m) KEY = m[1].trim().replace(/^["']|["']$/g, '');
+  } catch {
+    /* 没有 .env 就继续用环境变量 */
+  }
+}
+
 const PORT = Number(process.env.AI_PROXY_PORT || 8893);
 
 if (!KEY) {
-  console.error('请先设置环境变量 DEEPSEEK_API_KEY');
+  console.error('未找到 DEEPSEEK_API_KEY。');
+  console.error('方式一：在 proxy/.env 里写 DEEPSEEK_API_KEY=sk-你的key');
+  console.error('方式二：启动前设置环境变量 DEEPSEEK_API_KEY');
   process.exit(1);
 }
 

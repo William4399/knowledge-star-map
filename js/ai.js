@@ -13,6 +13,18 @@ const DEFAULT_PROXY_URL = 'https://knowledge-star-map.2117841858.workers.dev';
 
 const STORAGE_KEY = 'ksm_ai_proxy';
 
+/** 从本机 / 局域网打开页面时，默认用同一台机器的 8893 端口做代理（配合 serve.mjs + local-proxy.mjs 零配置可用） */
+function sameHostProxy() {
+  try {
+    const h = location.hostname;
+    if (h === 'localhost' || h === '127.0.0.1' || h === '[::1]') return 'http://127.0.0.1:8893';
+    if (/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h)) return `http://${h}:8893`;
+  } catch {
+    /* 非浏览器环境 */
+  }
+  return '';
+}
+
 function proxyUrl() {
   try {
     const custom = localStorage.getItem(STORAGE_KEY);
@@ -20,7 +32,7 @@ function proxyUrl() {
   } catch {
     /* localStorage 不可用时用默认 */
   }
-  return DEFAULT_PROXY_URL;
+  return sameHostProxy() || DEFAULT_PROXY_URL;
 }
 
 /** 当前生效的代理地址（空字符串表示未配置） */
@@ -28,7 +40,7 @@ export function currentProxyUrl() {
   return proxyUrl();
 }
 
-/** 自定义代理地址（局域网演示时填 http://笔记本IP:8892）；传空字符串恢复默认 */
+/** 自定义代理地址（局域网演示时填 http://笔记本IP:8893）；传空字符串恢复默认 */
 export function setProxyUrl(url) {
   try {
     if (url) localStorage.setItem(STORAGE_KEY, url);

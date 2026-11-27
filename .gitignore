@@ -31,3 +31,4 @@ desktop-dist/
 # 本地凭据
 .token
 .git-credentials
+proxy/.env

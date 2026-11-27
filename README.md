@@ -180,10 +180,17 @@ Python / 线性代数 / 概率统计 → 机器学习 → 模型评估与实验
 
 两种部署方式：
 
-1. **局域网演示（国内推荐）**：`workers.dev` 在国内被 GFW 按 SNI 封锁，手机上访问不稳定。演示前在笔记本运行：
-   - `DEEPSEEK_API_KEY=sk-你的key node proxy/local-proxy.mjs`（Windows PowerShell 用 `$env:DEEPSEEK_API_KEY="sk-..."; node proxy/local-proxy.mjs`）
-   - 手机连笔记本热点或同一 Wi-Fi，在「AI 判分代理」里填 `http://<笔记本IP>:8893`
-2. **Cloudflare Worker（海外/公网）**：`wrangler deploy proxy/deepseek-worker.js --name ksm-ai --compatibility-date 2026-01-01`，然后 `wrangler secret put DEEPSEEK_API_KEY`，在 App 里填 Worker 地址
+1. **本机 / 局域网（推荐，零配置）**：克隆后直接双击 `start-demo.cmd`，或手动执行：
+   ```bash
+   node serve.mjs                 # 网页服务 http://localhost:8891
+   node proxy/local-proxy.mjs     # AI 代理   http://localhost:8893
+   ```
+   - Key 放在 `proxy/.env`：`DEEPSEEK_API_KEY=sk-你的key`（该文件已被 git 忽略，不会入库）
+   - 页面会自动把**同一主机的 8893 端口**当作代理，无需任何手动设置
+   - 手机演示：连同一热点 / Wi-Fi，打开终端里打印的「局域网访问」地址即可，同样自动生效
+2. **Cloudflare Worker（海外 / 公网）**：`wrangler deploy proxy/deepseek-worker.js --name ksm-ai --compatibility-date 2026-01-01`，然后 `wrangler secret put DEEPSEEK_API_KEY`。注意 `workers.dev` 域名在国内被封锁，仅适合海外访问或绑定自有域名
+
+> 需要给**不在同一网络**的人提供服务时，必须把代理部署到国内可达的云函数（云开发 / 阿里云函数计算），并加访问口令与限流，否则代理地址公开后会被刷爆额度。
 
 降级与隐私：未配置代理、断网、15 秒超时或返回格式错误时自动回退关键词判分；网络故障后熔断 5 分钟直接走本地判分，避免反复等待；只发送题干、参考答案、评分关键词和学生作答文本，不发送个人资料或学习记录。
 
@@ -343,12 +350,19 @@ python verify_graph.py
 
 ## 十一、运行方式
 
+最简单：双击 `start-demo.cmd`（Windows），它会启动网页服务与 AI 代理并打开浏览器；首次运行会让你粘贴 DeepSeek Key。
+
+手动运行（任意平台，只需 Node 18+）：
+
 ```bash
 cd 项目目录
-python -m http.server 8765
+node serve.mjs                 # 网页服务 http://localhost:8891
+node proxy/local-proxy.mjs     # 可选：AI 代理 http://localhost:8893
 ```
 
-浏览器打开 `http://localhost:8765/index.html`。
+浏览器打开 `http://localhost:8891/index.html`。
+
+> 实测通过：在**局域网 IP 上打开**（如 `http://192.168.x.x:8891`）时，前端会自动把同主机 8893 端口作为 AI 代理，手机无需任何额外配置；实测 AI 判分返回真实 DeepSeek 结果。
 
 > 不能直接双击 `index.html`。浏览器在 `file://` 协议下会拦截 `fetch` 读取 JSON。
 
@@ -566,3 +580,4 @@ temp_20261123_01/
 | v2.4 | 启动动画重做：粒子沿螺旋弧线飞入（二次贝塞尔路径），拖尾加长为 5 段；中心从实心光团改为空心环 + 小亮核；泛光收敛；星系图标重生成（空心内环、连续旋臂、金色点缀） |
 | v2.5 | 性能与排版：星图辉光/弧光/流光改为预渲染精灵贴图（视觉不变，减少每帧渐变创建）；WebView 静态资源允许缓存；移动端排版全面升级（正文 12.5–14px、标题加粗分级、行高放宽、辅助文字提亮） |
 | v2.6 | AI 语义判分：新增 DeepSeek 代理（Cloudflare Worker，密钥仅在服务端）；简答题支持 AI 按评分点判分并给出评语，断网/未配置自动回退关键词判分 |
+| v2.7 | 零配置上手：新增 `serve.mjs`（Node 静态服务，打印局域网地址）与 `start-demo.cmd` 一键启动；前端自动把同主机 8893 当作 AI 代理，本机/局域网开箱即用；`proxy/.env` 存 Key 且不入库 |
