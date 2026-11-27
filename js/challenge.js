@@ -338,12 +338,14 @@ export function openChallenge(nodeId, options = {}) {
         ? `${String.fromCharCode(65 + Number(d.ans))}. ${escapeHtml(q.options[d.ans])}`
         : escapeHtml(d.ans);
       const keywordHtml = q.type === 'short'
-        ? `<div class="keyword-line">
-             ${d.hits.map(k => `<span class="kw hit">${escapeHtml(k)}</span>`).join('')}
-             ${d.missing.map(k => `<span class="kw miss">${escapeHtml(k)}</span>`).join('')}
-           </div>
-           ${d.ai && d.feedback ? `<p class="ai-feedback">AI 评语：${escapeHtml(d.feedback)}</p>` : ''}
-           <p class="reference">参考：${escapeHtml(q.reference || '')}</p>`
+        ? (d.ai
+          ? `${d.feedback ? `<p class="ai-feedback">AI 评语：${escapeHtml(d.feedback)}</p>` : ''}
+             <p class="reference">参考：${escapeHtml(q.reference || '')}</p>`
+          : `<div class="keyword-line">
+               ${d.hits.map(k => `<span class="kw hit">${escapeHtml(k)}</span>`).join('')}
+               ${d.missing.map(k => `<span class="kw miss">${escapeHtml(k)}</span>`).join('')}
+             </div>
+             <p class="reference">参考：${escapeHtml(q.reference || '')}</p>`)
         : `<p class="reference">正确答案：${String.fromCharCode(65 + q.answer)}. ${escapeHtml(q.options[q.answer])}</p>`;
 
       return `<article class="review ${d.ok ? 'ok' : 'bad'}">
