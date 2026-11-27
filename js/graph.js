@@ -247,6 +247,29 @@ export function getHighlight() {
   return [...highlight];
 }
 
+/* ============ 辉光精灵缓存：每帧直接贴图，避免反复创建径向渐变 ============ */
+/* 预渲染的径向渐变与每帧 createRadialGradient 的像素结果一致，仅做 alpha 整体缩放 */
+const spriteCache = new Map();
+
+function glowSprite(color, stops) {
+  const key = color + '|' + stops.map(s => s.join(':')).join(',');
+  let c = spriteCache.get(key);
+  if (!c) {
+    const S = 128;
+    c = document.createElement('canvas');
+    c.width = c.height = S;
+    const x = c.getContext('2d');
+    const g = x.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+    stops.forEach(([o, a]) => g.addColorStop(o, hexToRgba(color, a)));
+    x.fillStyle = g;
+    x.beginPath();
+    x.arc(S / 2, S / 2, S / 2, 0, TAU);
+    x.fill();
+    spriteCache.set(key, c);
+  }
+  return c;
+}
+
 /* ============ 星云（替代虚线圆圈） ============ */
 function drawNebulae(ctx, globalScale) {
   if (!graph) return;
@@ -272,14 +295,10 @@ function drawNebulae(ctx, globalScale) {
     ns.forEach(n => { spread = Math.max(spread, Math.hypot(n.x - cx, n.y - cy)); });
     const R = Math.min(spread + 105, 230);
 
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
-    grad.addColorStop(0, hexToRgba(g.color, 0.085));
-    grad.addColorStop(0.45, hexToRgba(g.color, 0.045));
-    grad.addColorStop(1, hexToRgba(g.color, 0));
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, 0, TAU);
-    ctx.fill();
+    ctx.drawImage(
+      glowSprite(g.color, [[0, 0.085], [0.45, 0.045], [1, 0]]),
+      cx - R, cy - R, R * 2, R * 2
+    );
   });
 
   ctx.globalCompositeOperation = 'source-over';
@@ -413,15 +432,14 @@ function drawStarNode(node, ctx, globalScale) {
 
   // 大范围柔光（未点亮时大幅减弱）
   const glowR = r * (hovered ? 7 : unlit ? 3.2 : 5.6);
-  const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowR);
-  glow.addColorStop(0, hexToRgba(drawColor, (unlit ? 0.18 : 0.62) * intensity));
-  glow.addColorStop(0.22, hexToRgba(drawColor, (unlit ? 0.06 : 0.24) * intensity));
-  glow.addColorStop(0.55, hexToRgba(drawColor, (unlit ? 0.015 : 0.07) * intensity));
-  glow.addColorStop(1, hexToRgba(drawColor, 0));
-  ctx.fillStyle = glow;
-  ctx.beginPath();
-  ctx.arc(node.x, node.y, glowR, 0, TAU);
-  ctx.fill();
+  ctx.globalAlpha = Math.max(0, intensity);
+  ctx.drawImage(
+    glowSprite(drawColor, unlit
+      ? [[0, 0.18], [0.22, 0.06], [0.55, 0.015], [1, 0]]
+      : [[0, 0.62], [0.22, 0.24], [0.55, 0.07], [1, 0]]),
+    node.x - glowR, node.y - glowR, glowR * 2, glowR * 2
+  );
+  ctx.globalAlpha = 1;
 
   // 弧光：未点亮时不画
   if (!unlit) {
@@ -564,14 +582,9 @@ function drawFlare(ctx, x, y, len, angle, color, alpha) {
   ctx.translate(x, y);
   ctx.rotate(angle);
   ctx.scale(1, 0.11);
-  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, len);
-  g.addColorStop(0, hexToRgba(color, alpha));
-  g.addColorStop(0.3, hexToRgba(color, alpha * 0.45));
-  g.addColorStop(1, hexToRgba(color, 0));
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.arc(0, 0, len, 0, TAU);
-  ctx.fill();
+  ctx.globalAlpha = Math.max(0, alpha);
+  ctx.drawImage(glowSprite(color, [[0, 1], [0.3, 0.45], [1, 0]]), -len, -len, len * 2, len * 2);
+  ctx.globalAlpha = 1;
   ctx.restore();
 }
 
@@ -620,12 +633,8 @@ function drawLink(link, ctx, globalScale) {
   const px = s.x + (t.x - s.x) * p;
   const py = s.y + (t.y - s.y) * p;
   const dotR = isPrereq ? 5.0 : 3.8;
-  const dg = ctx.createRadialGradient(px, py, 0, px, py, dotR);
-  dg.addColorStop(0, hexToRgba(color, isPrereq ? 1.0 : 0.8));
-  dg.addColorStop(0.35, hexToRgba(color, isPrereq ? 0.45 : 0.3));
-  dg.addColorStop(1, hexToRgba(color, 0));
-  ctx.fillStyle = dg;
-  ctx.beginPath();
-  ctx.arc(px, py, dotR, 0, TAU);
-  ctx.fill();
+  ctx.drawImage(
+    glowSprite(color, isPrereq ? [[0, 1], [0.35, 0.45], [1, 0]] : [[0, 0.8], [0.35, 0.3], [1, 0]]),
+    px - dotR, py - dotR, dotR * 2, dotR * 2
+  );
 }

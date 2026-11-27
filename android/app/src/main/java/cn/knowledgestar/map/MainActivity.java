@@ -126,7 +126,13 @@ public class MainActivity extends Activity {
         if (data == null) return notFound();
 
         Map<String, String> headers = new HashMap<>();
-        headers.put("Cache-Control", "no-store");
+        // 静态资源允许短期缓存，加速二次加载；HTML 不缓存以便及时更新
+        String lowerPath = path.toLowerCase();
+        boolean staticAsset = lowerPath.endsWith(".js") || lowerPath.endsWith(".mjs")
+                || lowerPath.endsWith(".css") || lowerPath.endsWith(".png") || lowerPath.endsWith(".jpg")
+                || lowerPath.endsWith(".svg") || lowerPath.endsWith(".webp") || lowerPath.endsWith(".json")
+                || lowerPath.endsWith(".woff2") || lowerPath.endsWith(".woff");
+        headers.put("Cache-Control", staticAsset ? "max-age=3600" : "no-store");
         headers.put("Access-Control-Allow-Origin", "*");
         return new WebResourceResponse(mimeOf(path), "utf-8", 200, "OK", headers, new ByteArrayInputStream(data));
     }
