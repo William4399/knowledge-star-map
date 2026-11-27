@@ -441,11 +441,11 @@ export function renderProfile(root, handlers = {}) {
         <label class="config-label" for="ai-proxy">AI 判分代理</label>
         <div class="ai-config-row">
           <input id="ai-proxy" class="short-input" type="url" spellcheck="false"
-                 placeholder="https://…workers.dev 或 http://笔记本IP:8893"
+                 placeholder="留空使用默认云端代理，或填 http://笔记本IP:8893"
                  value="${escapeHtml(currentProxyUrl())}">
           <button class="btn ghost sm" data-action="ai-save">保存</button>
         </div>
-        <p class="input-hint ai-status">${aiEnabled() ? '已启用 AI 语义判分' : '当前为本地关键词判分'} · 演示时可在笔记本运行 proxy/local-proxy.mjs，然后填 http://笔记本IP:8893</p>
+        <p class="input-hint ai-status">${aiEnabled() ? '已启用 AI 语义判分（默认云端代理，无需配置）' : '当前为本地关键词判分'} · 也可改填本机代理 http://笔记本IP:8893</p>
       </div>
     </section>
 
@@ -482,7 +482,7 @@ export function renderProfile(root, handlers = {}) {
       const statusEl = root.querySelector('.ai-status');
       if (statusEl) statusEl.textContent = aiEnabled()
         ? '已启用 AI 语义判分 · 地址 ' + url
-        : '当前为本地关键词判分 · 演示时可在笔记本运行 proxy/local-proxy.mjs，然后填 http://笔记本IP:8893';
+        : '当前为本地关键词判分 · 也可改填本机代理 http://笔记本IP:8893';
       toast(aiEnabled() ? 'AI 判分已启用' : '已恢复关键词判分', 'success');
     } else if (action === 'export') {
       const stamp = new Date().toISOString().slice(0, 10);
